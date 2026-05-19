@@ -135,6 +135,10 @@ RESTART_COMMAND="openclaw gateway restart"
 
 分享日志前，请检查里面是否包含本机路径、服务名或私有通道地址。
 
+## 开源许可
+
+MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接复用、改造和分发。
+
 ## 发布到 ClawHub
 
 本仓库带 `SKILL.md`，可以作为 OpenClaw skill 发布：

@@ -131,6 +131,10 @@ This project intentionally avoids destructive behavior. It does not edit OpenCla
 
 Before sharing logs, review them for local paths, service names, and channel URLs.
 
+## License
+
+MIT-0. This matches ClawHub's skill publishing requirement and allows reuse without attribution requirements.
+
 ## Publish To ClawHub
 
 This repository includes `SKILL.md`, so it can be published as an OpenClaw skill bundle:
