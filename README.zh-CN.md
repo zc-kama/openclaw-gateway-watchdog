@@ -145,7 +145,7 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 
 ```bash
 clawhub publish . \
-  --slug openclaw-gateway-watchdog \
+  --slug openclaw-weixin-gateway-watchdog \
   --name "OpenClaw Gateway Watchdog" \
   --version 1.0.0 \
   --changelog "Initial public watchdog release"

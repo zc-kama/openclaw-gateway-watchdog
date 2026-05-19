@@ -9,3 +9,4 @@
 - Add exponential backoff, hourly restart limits, lock protection, and log rotation.
 - Reset failure state after five consecutive successful channel probes.
 - Add ClawHub-ready `SKILL.md`.
+- Publish under the ClawHub slug `openclaw-weixin-gateway-watchdog`.

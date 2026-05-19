@@ -141,7 +141,7 @@ This repository includes `SKILL.md`, so it can be published as an OpenClaw skill
 
 ```bash
 clawhub publish . \
-  --slug openclaw-gateway-watchdog \
+  --slug openclaw-weixin-gateway-watchdog \
   --name "OpenClaw Gateway Watchdog" \
   --version 1.0.0 \
   --changelog "Initial public watchdog release"
