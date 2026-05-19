@@ -51,6 +51,14 @@ Only gateway failures restart immediately. Channel failures go through confirmat
 
 ## Install
 
+Install from ClawHub:
+
+```bash
+openclaw skills install gateway-watchdog-for-openclaw-weixin
+```
+
+Or use this repository directly.
+
 Run inside WSL/Linux:
 
 ```bash
@@ -137,13 +145,18 @@ MIT-0. This matches ClawHub's skill publishing requirement and allows reuse with
 
 ## Publish To ClawHub
 
-This repository includes `SKILL.md`, so it can be published as an OpenClaw skill bundle:
+Published package:
+
+- ClawHub: <https://clawhub.ai/zc-kama/gateway-watchdog-for-openclaw-weixin>
+- Slug: `gateway-watchdog-for-openclaw-weixin`
+
+This repository includes `SKILL.md`, so it can also be republished as an OpenClaw skill bundle:
 
 ```bash
 clawhub publish . \
   --slug gateway-watchdog-for-openclaw-weixin \
   --name "OpenClaw Gateway Watchdog" \
-  --version 1.0.0 \
+  --version 1.0.1 \
   --changelog "Initial public watchdog release"
 ```
 

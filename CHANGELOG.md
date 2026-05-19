@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Add the published ClawHub URL and install command to the README files.
+
 ## 1.0.0
 
 - First public zero-config release.

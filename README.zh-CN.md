@@ -51,6 +51,14 @@ OpenClaw Gateway 和通道插件是长连接系统。电脑睡眠、切换 Wi-Fi
 
 ## 安装
 
+通过 ClawHub 安装：
+
+```bash
+openclaw skills install gateway-watchdog-for-openclaw-weixin
+```
+
+也可以直接使用本仓库。
+
 在 WSL/Linux 里进入本目录运行：
 
 ```bash
@@ -141,13 +149,18 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 
 ## 发布到 ClawHub
 
-本仓库带 `SKILL.md`，可以作为 OpenClaw skill 发布：
+已发布包：
+
+- ClawHub：<https://clawhub.ai/zc-kama/gateway-watchdog-for-openclaw-weixin>
+- Slug：`gateway-watchdog-for-openclaw-weixin`
+
+本仓库带 `SKILL.md`，也可以重新发布为 OpenClaw skill：
 
 ```bash
 clawhub publish . \
   --slug gateway-watchdog-for-openclaw-weixin \
   --name "OpenClaw Gateway Watchdog" \
-  --version 1.0.0 \
+  --version 1.0.1 \
   --changelog "Initial public watchdog release"
 ```
 
