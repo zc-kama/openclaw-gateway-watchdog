@@ -1,4 +1,4 @@
-# OpenClaw Gateway 看门狗
+# OpenClaw Gateway Resilience Guard
 
 OpenClaw Gateway 外部恢复守护脚本，面向 `openclaw-weixin` 这类需要长期在线的通道。
 
@@ -54,7 +54,7 @@ OpenClaw Gateway 和通道插件是长连接系统。电脑睡眠、切换 Wi-Fi
 通过 ClawHub 安装：
 
 ```bash
-openclaw skills install gateway-watchdog-for-openclaw-weixin
+clawhub install gateway-resilience-guard
 ```
 
 也可以直接使用本仓库。
@@ -151,17 +151,17 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 
 已发布包：
 
-- ClawHub：<https://clawhub.ai/zc-kama/gateway-watchdog-for-openclaw-weixin>
-- Slug：`gateway-watchdog-for-openclaw-weixin`
+- ClawHub：<https://clawhub.ai/zc-kama/gateway-resilience-guard>
+- Slug：`gateway-resilience-guard`
 
 本仓库带 `SKILL.md`，也可以重新发布为 OpenClaw skill：
 
 ```bash
 clawhub publish . \
-  --slug gateway-watchdog-for-openclaw-weixin \
-  --name "OpenClaw Gateway Watchdog" \
-  --version 1.0.1 \
-  --changelog "Initial public watchdog release"
+  --slug gateway-resilience-guard \
+  --name "OpenClaw Gateway Resilience Guard" \
+  --version 1.1.0 \
+  --changelog "Rename package and expand public summary"
 ```
 
 发布前需要先执行 `clawhub login` 完成 CLI 登录。

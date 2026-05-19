@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- Rename the ClawHub package to `gateway-resilience-guard`.
+- Expand the public summary to describe the layered probes, restart guardrails, and advantages over simple restart loops or one-URL monitors.
+
 ## 1.0.1
 
 - Add the published ClawHub URL and install command to the README files.
@@ -13,4 +18,4 @@
 - Add exponential backoff, hourly restart limits, lock protection, and log rotation.
 - Reset failure state after five consecutive successful channel probes.
 - Add ClawHub-ready `SKILL.md`.
-- Publish under the ClawHub slug `gateway-watchdog-for-openclaw-weixin`.
+- Initial ClawHub publication used a temporary slug before the 1.1.0 rename.

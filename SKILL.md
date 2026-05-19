@@ -1,6 +1,6 @@
 ---
-name: gateway-watchdog-for-openclaw-weixin
-description: Install and operate a guarded watchdog that keeps OpenClaw Gateway and long-lived channels such as WeChat online by probing health, channel reachability, and general network status before restarting.
+name: gateway-resilience-guard
+description: OpenClaw Gateway Resilience Guard keeps Gateway and long-lived channel plugins online after Wi-Fi changes, WSL sleep/resume, session expiry, or partial outages. Compared with simple restart loops and one-URL monitors, it layers local gateway health, channel reachability, and multi-site network probes; avoids restarts during global disconnects; then recovers with backoff, restart limits, quiet hours, single-instance locking, log rotation, generated config, user-systemd service, and fallback mode.
 tags:
   - openclaw
   - gateway
@@ -19,7 +19,7 @@ permissions:
   - Restarts OpenClaw Gateway through systemctl --user or openclaw gateway restart.
 ---
 
-# OpenClaw Gateway Watchdog
+# OpenClaw Gateway Resilience Guard
 
 Use this skill when a user wants to keep OpenClaw Gateway and message channels online after network drops, WSL sleep/resume, or long-lived connection failures.
 

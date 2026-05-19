@@ -1,4 +1,4 @@
-# OpenClaw Gateway Watchdog
+# OpenClaw Gateway Resilience Guard
 
 External recovery guard for OpenClaw Gateway and long-lived channel plugins such as `openclaw-weixin`.
 
@@ -54,7 +54,7 @@ Only gateway failures restart immediately. Channel failures go through confirmat
 Install from ClawHub:
 
 ```bash
-openclaw skills install gateway-watchdog-for-openclaw-weixin
+clawhub install gateway-resilience-guard
 ```
 
 Or use this repository directly.
@@ -147,17 +147,17 @@ MIT-0. This matches ClawHub's skill publishing requirement and allows reuse with
 
 Published package:
 
-- ClawHub: <https://clawhub.ai/zc-kama/gateway-watchdog-for-openclaw-weixin>
-- Slug: `gateway-watchdog-for-openclaw-weixin`
+- ClawHub: <https://clawhub.ai/zc-kama/gateway-resilience-guard>
+- Slug: `gateway-resilience-guard`
 
 This repository includes `SKILL.md`, so it can also be republished as an OpenClaw skill bundle:
 
 ```bash
 clawhub publish . \
-  --slug gateway-watchdog-for-openclaw-weixin \
-  --name "OpenClaw Gateway Watchdog" \
-  --version 1.0.1 \
-  --changelog "Initial public watchdog release"
+  --slug gateway-resilience-guard \
+  --name "OpenClaw Gateway Resilience Guard" \
+  --version 1.1.0 \
+  --changelog "Rename package and expand public summary"
 ```
 
 ClawHub requires CLI authentication. Run `clawhub login` first.
