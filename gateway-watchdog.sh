@@ -30,6 +30,7 @@ MAX_INTERVAL="${MAX_INTERVAL:-1800}"
 CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-5}"
 MAX_TIME="${MAX_TIME:-10}"
 CHANNEL_FAILURES_BEFORE_RESTART="${CHANNEL_FAILURES_BEFORE_RESTART:-2}"
+SUCCESS_COUNT_TO_RESET="${SUCCESS_COUNT_TO_RESET:-5}"
 MAX_RESTARTS_PER_HOUR="${MAX_RESTARTS_PER_HOUR:-6}"
 POST_RESTART_SLEEP="${POST_RESTART_SLEEP:-30}"
 
@@ -248,6 +249,7 @@ sleep_interval() {
 
 main() {
   local fail_count=0
+  local success_count=0
   local gw_status=0
   local wait_for=0
 
@@ -262,6 +264,7 @@ main() {
     gw_status=$?
     if [ "$gw_status" -eq 1 ]; then
       fail_count=$((fail_count + 1))
+      success_count=0
       log "CRITICAL: gateway appears down; restarting immediately"
       restart_gateway || true
       sleep "$POST_RESTART_SLEEP"
@@ -270,14 +273,21 @@ main() {
 
     if check_channel; then
       if [ "$fail_count" -gt 0 ]; then
-        log "RECOVERED: channel probe succeeded; failure count reduced"
-        fail_count=$((fail_count - 1))
+        success_count=$((success_count + 1))
+        if [ "$success_count" -ge "$SUCCESS_COUNT_TO_RESET" ]; then
+          log "RECOVERED: ${SUCCESS_COUNT_TO_RESET} consecutive channel probes succeeded; failure count reset"
+          fail_count=0
+          success_count=0
+        else
+          log "RECOVERING: channel probe succeeded (${success_count}/${SUCCESS_COUNT_TO_RESET})"
+        fi
       fi
       sleep "$(sleep_interval)"
       continue
     fi
 
     fail_count=$((fail_count + 1))
+    success_count=0
     log "CHANNEL FAIL: ${CHANNEL_URL} failed (${fail_count}/${CHANNEL_FAILURES_BEFORE_RESTART})"
 
     if ! check_network; then

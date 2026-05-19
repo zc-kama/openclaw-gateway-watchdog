@@ -7,4 +7,5 @@
 - Generate user config and systemd service automatically.
 - Add layered gateway/channel/network probes.
 - Add exponential backoff, hourly restart limits, lock protection, and log rotation.
+- Reset failure state after five consecutive successful channel probes.
 - Add ClawHub-ready `SKILL.md`.

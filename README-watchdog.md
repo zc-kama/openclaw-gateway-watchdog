@@ -1,6 +1,6 @@
 # OpenClaw Gateway 看门狗
 
-这是优化后的说明入口。完整中文文档见 [README.zh-CN.md](README.zh-CN.md)，英文文档见 [README.md](README.md)。
+这是项目的中文快捷入口。完整中文文档见 [README.zh-CN.md](README.zh-CN.md)，英文文档见 [README.md](README.md)。
 
 最简单安装：
 
