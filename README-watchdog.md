@@ -8,6 +8,12 @@
 bash install-watchdog.sh
 ```
 
+Windows：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install-watchdog.ps1
+```
+
 默认配置即可启动；需要指定自己的通道地址时：
 
 ```bash

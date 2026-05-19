@@ -2,7 +2,7 @@
 
 External recovery guard for OpenClaw Gateway and long-lived channel plugins such as `openclaw-weixin`.
 
-This project is for people who run OpenClaw continuously on WSL/Linux and need the gateway to recover from channel disconnects, network sleep/resume, and WeChat iLink session expiry without babysitting the terminal.
+This project is for people who run OpenClaw continuously on Linux, WSL, macOS, or Windows and need the gateway to recover from channel disconnects, network sleep/resume, and long-lived session failures without babysitting the terminal.
 
 ## Problem
 
@@ -23,8 +23,8 @@ The script uses a three-layer health model before it restarts anything:
 
 | Layer | Probe | Purpose |
 | --- | --- | --- |
-| Gateway | systemd user service, local health URL, local TCP port, process fallback | Detect whether OpenClaw Gateway is down or locally unreachable. |
-| Channel | main channel URL, default `https://ilinkai.weixin.qq.com` | Detect whether the channel endpoint used by WeChat is reachable from this machine. |
+| Gateway | `openclaw gateway status --json --require-rpc`, local health URL, local TCP port, service/process fallback | Detect whether OpenClaw Gateway is down or locally unreachable. |
+| Channel | `openclaw health --json --verbose`, `openclaw status --deep`, optional `openclaw channels status --probe`, then URL fallback | Prefer OpenClaw's own per-channel health model, then fall back to a configured URL when native probes are unavailable. |
 | Network | multiple independent URLs, default Baidu/QQ/Weixin | Avoid restarting the gateway during whole-machine or ISP network failure. |
 
 Only gateway failures restart immediately. Channel failures go through confirmation, network split-brain protection, exponential backoff, and restart-rate limits.
@@ -44,8 +44,11 @@ Only gateway failures restart immediately. Channel failures go through confirmat
 | File | Purpose |
 | --- | --- |
 | `gateway-watchdog.sh` | Main daemon loop: probes, backoff, restart decisions, log rotation, single-instance lock. |
-| `install-watchdog.sh` | One-command installer: copies files, writes config, creates user systemd service, starts it. |
+| `gateway-watchdog.ps1` | Windows-native daemon loop for Task Scheduler. |
+| `install-watchdog.sh` | Linux/WSL/macOS installer: copies files, writes config, creates systemd user service or macOS LaunchAgent. |
+| `install-watchdog.ps1` | Windows installer: creates config and a Task Scheduler job. |
 | `uninstall-watchdog.sh` | Stops and removes the service and installed scripts. |
+| `uninstall-watchdog.ps1` | Windows uninstaller. |
 | `SKILL.md` | ClawHub/OpenClaw skill metadata and operator instructions. |
 | `README.zh-CN.md` | Chinese documentation. |
 
@@ -59,7 +62,7 @@ clawhub install gateway-resilience-guard
 
 Or use this repository directly.
 
-Run inside WSL/Linux:
+Linux, WSL, or macOS:
 
 ```bash
 bash install-watchdog.sh
@@ -77,12 +80,20 @@ For a custom channel probe:
 bash install-watchdog.sh --channel-url "https://your-channel.example.com/health"
 ```
 
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install-watchdog.ps1
+```
+
 The installer writes:
 
 - scripts to `~/.local/share/openclaw-gateway-watchdog`;
 - config to `~/.config/openclaw-gateway-watchdog/watchdog.env`;
 - logs to `~/.local/state/openclaw-gateway-watchdog/watchdog.log`;
-- a user service to `~/.config/systemd/user/gateway-watchdog.service`.
+- a Linux/WSL user service to `~/.config/systemd/user/gateway-watchdog.service`;
+- a macOS LaunchAgent to `~/Library/LaunchAgents/ai.clawhub.gateway-resilience-guard.plist`;
+- a Windows scheduled task named `OpenClaw Gateway Resilience Guard`.
 
 If user systemd is unavailable, the installer starts a direct background fallback process and stores its pid in the state directory.
 
@@ -93,6 +104,22 @@ systemctl --user status gateway-watchdog
 journalctl --user -u gateway-watchdog -f
 systemctl --user restart gateway-watchdog
 bash ~/.local/share/openclaw-gateway-watchdog/uninstall-watchdog.sh
+```
+
+macOS:
+
+```bash
+launchctl print gui/$(id -u)/ai.clawhub.gateway-resilience-guard
+tail -f ~/.local/state/openclaw-gateway-watchdog/watchdog.log
+bash ~/.local/share/openclaw-gateway-watchdog/uninstall-watchdog.sh
+```
+
+Windows:
+
+```powershell
+Get-ScheduledTask -TaskName "OpenClaw Gateway Resilience Guard"
+Get-Content "$env:LOCALAPPDATA\openclaw-gateway-watchdog\watchdog.log" -Wait
+powershell -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\openclaw-gateway-watchdog\uninstall-watchdog.ps1"
 ```
 
 Remove config and logs too:
@@ -119,6 +146,10 @@ GATEWAY_PORT="18789"
 CHANNEL_URL="https://ilinkai.weixin.qq.com"
 NETWORK_URLS="https://www.baidu.com https://www.qq.com https://api.weixin.qq.com"
 RESTART_COMMAND="systemctl --user restart openclaw-gateway"
+OPENCLAW_NATIVE_PROBES="auto"
+OPENCLAW_HEALTH_TIMEOUT_MS="12000"
+OPENCLAW_GATEWAY_STRICT="0"
+OPENCLAW_CHANNELS_PROBE="1"
 BASE_INTERVAL="60"
 NIGHT_INTERVAL="300"
 MAX_INTERVAL="1800"
@@ -132,6 +163,14 @@ Use `RESTART_COMMAND` if your OpenClaw install is not managed by a user-level sy
 ```bash
 RESTART_COMMAND="openclaw gateway restart"
 ```
+
+On Windows, the generated config is JSON:
+
+```text
+%APPDATA%\openclaw-gateway-watchdog\watchdog.json
+```
+
+Set `OpenClawNativeProbes` to `false` if your OpenClaw CLI is too old for `openclaw health` or `openclaw status --deep`.
 
 ## Safety Notes
 
@@ -156,8 +195,8 @@ This repository includes `SKILL.md`, so it can also be republished as an OpenCla
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.1.0 \
-  --changelog "Rename package and expand public summary"
+  --version 1.2.0 \
+  --changelog "Add native OpenClaw probes and cross-platform installers"
 ```
 
 ClawHub requires CLI authentication. Run `clawhub login` first.

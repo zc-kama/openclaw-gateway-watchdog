@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Add OpenClaw-native health probing via `openclaw gateway status --json --require-rpc`, `openclaw health --json --verbose`, and `openclaw status --deep`.
+- Add Windows Task Scheduler support with native PowerShell install, watchdog, and uninstall scripts.
+- Add macOS LaunchAgent support to the Bash installer and uninstaller.
+- Document cross-platform installation and native probe configuration.
+
 ## 1.1.0
 
 - Rename the ClawHub package to `gateway-resilience-guard`.

@@ -2,7 +2,7 @@
 
 OpenClaw Gateway 外部恢复守护脚本，面向 `openclaw-weixin` 这类需要长期在线的通道。
 
-这个项目解决的是一个很具体的运维问题：OpenClaw Gateway 进程还活着，但微信通道、长轮询、WSL 网络或 session 状态已经坏掉，导致消息收不到、发不出，最后只能手动 `openclaw gateway restart`。
+这个项目解决的是一个很具体的运维问题：OpenClaw Gateway 进程还活着，但通道、长轮询、WSL/系统网络或 session 状态已经坏掉，导致消息收不到、发不出，最后只能手动 `openclaw gateway restart`。
 
 ## 问题背景
 
@@ -23,8 +23,8 @@ OpenClaw Gateway 和通道插件是长连接系统。电脑睡眠、切换 Wi-Fi
 
 | 层级 | 检查对象 | 作用 |
 | --- | --- | --- |
-| Gateway 本机状态 | systemd 用户服务、本机 health URL、本机 TCP 端口、进程兜底 | 判断 OpenClaw Gateway 是否已经挂掉或本机不可达。 |
-| 通道状态 | 主通道 URL，默认 `https://ilinkai.weixin.qq.com` | 判断微信 iLink 等通道服务是否从当前机器可达。 |
+| Gateway 本机状态 | `openclaw gateway status --json --require-rpc`、本机 health URL、本机 TCP 端口、服务/进程兜底 | 判断 OpenClaw Gateway 是否已经挂掉或本机不可达。 |
+| 通道状态 | `openclaw health --json --verbose`、`openclaw status --deep`、可选 `openclaw channels status --probe`，最后才是 URL 兜底 | 优先使用 OpenClaw 自己的全通道健康模型；CLI 不支持时再退回 URL 探测。 |
 | 外部网络状态 | 百度、QQ、微信 API 等多个独立 URL | 排除全局断网，避免电脑没网时误重启 gateway。 |
 
 核心策略是：gateway 真挂了就立即重启；通道不通时先确认不是全局断网；网络正常但通道持续失败，才进入退避等待和重启流程。
@@ -44,8 +44,11 @@ OpenClaw Gateway 和通道插件是长连接系统。电脑睡眠、切换 Wi-Fi
 | 文件 | 作用 |
 | --- | --- |
 | `gateway-watchdog.sh` | 主守护脚本，负责探测、退避、熔断、日志、单实例锁和重启决策。 |
-| `install-watchdog.sh` | 一键安装脚本，自动复制文件、生成配置、创建用户级 systemd 服务并启动。 |
+| `gateway-watchdog.ps1` | Windows 原生守护脚本，用于 Task Scheduler。 |
+| `install-watchdog.sh` | Linux/WSL/macOS 安装脚本，自动复制文件、生成配置、创建 systemd 用户服务或 macOS LaunchAgent。 |
+| `install-watchdog.ps1` | Windows 安装脚本，创建配置和计划任务。 |
 | `uninstall-watchdog.sh` | 卸载脚本，停止服务并删除安装目录。 |
+| `uninstall-watchdog.ps1` | Windows 卸载脚本。 |
 | `SKILL.md` | ClawHub/OpenClaw 技能元数据和使用说明。 |
 | `README.md` | 英文文档。 |
 
@@ -59,7 +62,7 @@ clawhub install gateway-resilience-guard
 
 也可以直接使用本仓库。
 
-在 WSL/Linux 里进入本目录运行：
+Linux、WSL 或 macOS：
 
 ```bash
 bash install-watchdog.sh
@@ -77,12 +80,20 @@ bash install-watchdog.sh --yes
 bash install-watchdog.sh --channel-url "https://你的通道地址/health"
 ```
 
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install-watchdog.ps1
+```
+
 安装后会生成：
 
 - 脚本目录：`~/.local/share/openclaw-gateway-watchdog`
 - 配置文件：`~/.config/openclaw-gateway-watchdog/watchdog.env`
 - 日志文件：`~/.local/state/openclaw-gateway-watchdog/watchdog.log`
-- systemd 用户服务：`~/.config/systemd/user/gateway-watchdog.service`
+- Linux/WSL systemd 用户服务：`~/.config/systemd/user/gateway-watchdog.service`
+- macOS LaunchAgent：`~/Library/LaunchAgents/ai.clawhub.gateway-resilience-guard.plist`
+- Windows 计划任务：`OpenClaw Gateway Resilience Guard`
 
 如果当前环境没有 user systemd，安装脚本会退回到后台进程模式，并把 pid 写到状态目录。
 
@@ -93,6 +104,22 @@ systemctl --user status gateway-watchdog
 journalctl --user -u gateway-watchdog -f
 systemctl --user restart gateway-watchdog
 bash ~/.local/share/openclaw-gateway-watchdog/uninstall-watchdog.sh
+```
+
+macOS：
+
+```bash
+launchctl print gui/$(id -u)/ai.clawhub.gateway-resilience-guard
+tail -f ~/.local/state/openclaw-gateway-watchdog/watchdog.log
+bash ~/.local/share/openclaw-gateway-watchdog/uninstall-watchdog.sh
+```
+
+Windows：
+
+```powershell
+Get-ScheduledTask -TaskName "OpenClaw Gateway Resilience Guard"
+Get-Content "$env:LOCALAPPDATA\openclaw-gateway-watchdog\watchdog.log" -Wait
+powershell -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\openclaw-gateway-watchdog\uninstall-watchdog.ps1"
 ```
 
 连配置和日志一起删除：
@@ -119,6 +146,10 @@ GATEWAY_PORT="18789"
 CHANNEL_URL="https://ilinkai.weixin.qq.com"
 NETWORK_URLS="https://www.baidu.com https://www.qq.com https://api.weixin.qq.com"
 RESTART_COMMAND="systemctl --user restart openclaw-gateway"
+OPENCLAW_NATIVE_PROBES="auto"
+OPENCLAW_HEALTH_TIMEOUT_MS="12000"
+OPENCLAW_GATEWAY_STRICT="0"
+OPENCLAW_CHANNELS_PROBE="1"
 BASE_INTERVAL="60"
 NIGHT_INTERVAL="300"
 MAX_INTERVAL="1800"
@@ -132,6 +163,14 @@ MAX_RESTARTS_PER_HOUR="6"
 ```bash
 RESTART_COMMAND="openclaw gateway restart"
 ```
+
+Windows 的配置是 JSON：
+
+```text
+%APPDATA%\openclaw-gateway-watchdog\watchdog.json
+```
+
+如果你的 OpenClaw CLI 版本太旧，不支持 `openclaw health` 或 `openclaw status --deep`，可以把 `OpenClawNativeProbes` 设为 `false`。
 
 ## 安全边界
 
@@ -160,8 +199,8 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.1.0 \
-  --changelog "Rename package and expand public summary"
+  --version 1.2.0 \
+  --changelog "Add native OpenClaw probes and cross-platform installers"
 ```
 
 发布前需要先执行 `clawhub login` 完成 CLI 登录。

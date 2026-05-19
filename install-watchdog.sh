@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Install OpenClaw Gateway Watchdog for the current Linux/WSL user.
+# Install OpenClaw Gateway Resilience Guard for the current Linux/WSL/macOS user.
 
 set -euo pipefail
 
 SERVICE_NAME="gateway-watchdog"
+PLIST_LABEL="ai.clawhub.gateway-resilience-guard"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/share/openclaw-gateway-watchdog}"
 CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/openclaw-gateway-watchdog"
@@ -11,6 +12,8 @@ STATE_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/openclaw-gateway-watchdog"
 CONFIG_FILE="${CONFIG_DIR}/watchdog.env"
 SYSTEMD_USER_DIR="${HOME}/.config/systemd/user"
 SERVICE_FILE="${SYSTEMD_USER_DIR}/${SERVICE_NAME}.service"
+LAUNCH_AGENTS_DIR="${HOME}/Library/LaunchAgents"
+PLIST_FILE="${LAUNCH_AGENTS_DIR}/${PLIST_LABEL}.plist"
 
 CHANNEL_URL="${CHANNEL_URL:-}"
 GATEWAY_SERVICE="${GATEWAY_SERVICE:-}"
@@ -23,6 +26,11 @@ usage() {
   cat <<'USAGE'
 Usage:
   bash install-watchdog.sh [options]
+
+Platforms:
+  Linux/WSL: installs a user systemd service or direct-run fallback.
+  macOS:     installs a LaunchAgent.
+  Windows:   use install-watchdog.ps1 from PowerShell instead.
 
 Options:
   --yes                         Non-interactive install with defaults.
@@ -53,7 +61,7 @@ done
 
 case "$(uname -s 2>/dev/null || echo unknown)" in
   MINGW*|MSYS*|CYGWIN*)
-    echo "Please run this installer inside WSL/Linux, not Git Bash/PowerShell." >&2
+    echo "Please run install-watchdog.ps1 from PowerShell on Windows, or run this installer inside WSL/Linux/macOS." >&2
     exit 1
     ;;
 esac
@@ -125,6 +133,14 @@ require_cmd() {
   fi
 }
 
+xml_escape() {
+  printf '%s' "$1" | sed \
+    -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e 's/"/\&quot;/g'
+}
+
 require_cmd curl
 
 GATEWAY_SERVICE="${GATEWAY_SERVICE:-$(detect_gateway_service)}"
@@ -132,9 +148,12 @@ CHANNEL_URL="${CHANNEL_URL:-$(prompt_default "Channel probe URL" "https://ilinka
 GATEWAY_HEALTH_URL="${GATEWAY_HEALTH_URL:-$(prompt_default "Local gateway health URL" "http://127.0.0.1:18789/healthz")}"
 RESTART_COMMAND="${RESTART_COMMAND:-$(default_restart_command "$GATEWAY_SERVICE")}"
 
-mkdir -p "$INSTALL_DIR" "$CONFIG_DIR" "$STATE_DIR" "$SYSTEMD_USER_DIR"
+mkdir -p "$INSTALL_DIR" "$CONFIG_DIR" "$STATE_DIR"
 install -m 0755 "${SCRIPT_DIR}/gateway-watchdog.sh" "${INSTALL_DIR}/gateway-watchdog.sh"
 install -m 0755 "${SCRIPT_DIR}/uninstall-watchdog.sh" "${INSTALL_DIR}/uninstall-watchdog.sh"
+install -m 0644 "${SCRIPT_DIR}/gateway-watchdog.ps1" "${INSTALL_DIR}/gateway-watchdog.ps1" 2>/dev/null || true
+install -m 0644 "${SCRIPT_DIR}/install-watchdog.ps1" "${INSTALL_DIR}/install-watchdog.ps1" 2>/dev/null || true
+install -m 0644 "${SCRIPT_DIR}/uninstall-watchdog.ps1" "${INSTALL_DIR}/uninstall-watchdog.ps1" 2>/dev/null || true
 [ -f "${SCRIPT_DIR}/README.md" ] && install -m 0644 "${SCRIPT_DIR}/README.md" "${INSTALL_DIR}/README.md"
 [ -f "${SCRIPT_DIR}/README.zh-CN.md" ] && install -m 0644 "${SCRIPT_DIR}/README.zh-CN.md" "${INSTALL_DIR}/README.zh-CN.md"
 
@@ -149,6 +168,10 @@ GATEWAY_PORT="18789"
 CHANNEL_URL="${CHANNEL_URL}"
 NETWORK_URLS="https://www.baidu.com https://www.qq.com https://api.weixin.qq.com"
 RESTART_COMMAND="${RESTART_COMMAND}"
+OPENCLAW_NATIVE_PROBES="auto"
+OPENCLAW_HEALTH_TIMEOUT_MS="12000"
+OPENCLAW_GATEWAY_STRICT="0"
+OPENCLAW_CHANNELS_PROBE="1"
 BASE_INTERVAL="60"
 NIGHT_INTERVAL="300"
 MAX_INTERVAL="1800"
@@ -160,9 +183,51 @@ else
   echo "Keeping existing config: ${CONFIG_FILE}"
 fi
 
-cat >"$SERVICE_FILE" <<EOF
+if [ "$(uname -s 2>/dev/null || echo unknown)" = "Darwin" ]; then
+  mkdir -p "$LAUNCH_AGENTS_DIR"
+  cat >"$PLIST_FILE" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$(xml_escape "$PLIST_LABEL")</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$(xml_escape "${INSTALL_DIR}/gateway-watchdog.sh")</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>WATCHDOG_CONFIG</key>
+    <string>$(xml_escape "$CONFIG_FILE")</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>$(xml_escape "${STATE_DIR}/launchd.out.log")</string>
+  <key>StandardErrorPath</key>
+  <string>$(xml_escape "${STATE_DIR}/launchd.err.log")</string>
+</dict>
+</plist>
+EOF
+  if [ "$NO_START" -eq 0 ]; then
+    uid=$(id -u)
+    launchctl bootout "gui/${uid}" "$PLIST_FILE" >/dev/null 2>&1 || true
+    launchctl bootstrap "gui/${uid}" "$PLIST_FILE"
+    launchctl enable "gui/${uid}/${PLIST_LABEL}" >/dev/null 2>&1 || true
+    launchctl kickstart -k "gui/${uid}/${PLIST_LABEL}" >/dev/null 2>&1 || true
+  fi
+  echo "Installed macOS LaunchAgent: ${PLIST_LABEL}"
+  echo "Status:  launchctl print gui/$(id -u)/${PLIST_LABEL}"
+  echo "Logs:    tail -f ${STATE_DIR}/watchdog.log"
+else
+  mkdir -p "$SYSTEMD_USER_DIR"
+  cat >"$SERVICE_FILE" <<EOF
 [Unit]
-Description=OpenClaw Gateway Watchdog
+Description=OpenClaw Gateway Resilience Guard
 After=network-online.target
 Wants=network-online.target
 
@@ -177,23 +242,24 @@ RestartSec=20
 WantedBy=default.target
 EOF
 
-if systemd_user_available; then
-  systemctl --user daemon-reload
-  systemctl --user enable "$SERVICE_NAME"
-  if [ "$NO_START" -eq 0 ]; then
-    systemctl --user restart "$SERVICE_NAME"
+  if systemd_user_available; then
+    systemctl --user daemon-reload
+    systemctl --user enable "$SERVICE_NAME"
+    if [ "$NO_START" -eq 0 ]; then
+      systemctl --user restart "$SERVICE_NAME"
+    fi
+    echo "Installed systemd user service: ${SERVICE_NAME}"
+    echo "Status:  systemctl --user status ${SERVICE_NAME}"
+    echo "Logs:    journalctl --user -u ${SERVICE_NAME} -f"
+  else
+    echo "User systemd is not available. Installing direct-run fallback."
+    if [ "$NO_START" -eq 0 ]; then
+      nohup "${INSTALL_DIR}/gateway-watchdog.sh" >>"${STATE_DIR}/bootstrap.log" 2>&1 &
+      printf '%s\n' "$!" >"${STATE_DIR}/watchdog.pid"
+      echo "Started fallback process with PID $(cat "${STATE_DIR}/watchdog.pid")."
+    fi
+    echo "For automatic start after reboot, enable user systemd in WSL/Linux and re-run this installer."
   fi
-  echo "Installed systemd user service: ${SERVICE_NAME}"
-  echo "Status:  systemctl --user status ${SERVICE_NAME}"
-  echo "Logs:    journalctl --user -u ${SERVICE_NAME} -f"
-else
-  echo "User systemd is not available. Installing direct-run fallback."
-  if [ "$NO_START" -eq 0 ]; then
-    nohup "${INSTALL_DIR}/gateway-watchdog.sh" >>"${STATE_DIR}/bootstrap.log" 2>&1 &
-    printf '%s\n' "$!" >"${STATE_DIR}/watchdog.pid"
-    echo "Started fallback process with PID $(cat "${STATE_DIR}/watchdog.pid")."
-  fi
-  echo "For automatic start after reboot, enable user systemd in WSL/Linux and re-run this installer."
 fi
 
 echo ""

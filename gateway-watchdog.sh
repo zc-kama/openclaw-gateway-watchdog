@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# OpenClaw Gateway Watchdog
+# OpenClaw Gateway Resilience Guard
 # Keeps the OpenClaw gateway/channel alive with layered probes and guarded restarts.
 
 set -u
 
-WATCHDOG_VERSION="1.0.0"
+WATCHDOG_VERSION="1.2.0"
 
 CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/openclaw-gateway-watchdog"
 CONFIG_FILE="${WATCHDOG_CONFIG:-${CONFIG_DIR}/watchdog.env}"
@@ -23,6 +23,10 @@ GATEWAY_PORT="${GATEWAY_PORT:-18789}"
 CHANNEL_URL="${CHANNEL_URL:-https://ilinkai.weixin.qq.com}"
 NETWORK_URLS="${NETWORK_URLS:-https://www.baidu.com https://www.qq.com https://api.weixin.qq.com}"
 RESTART_COMMAND="${RESTART_COMMAND:-}"
+OPENCLAW_NATIVE_PROBES="${OPENCLAW_NATIVE_PROBES:-auto}"
+OPENCLAW_HEALTH_TIMEOUT_MS="${OPENCLAW_HEALTH_TIMEOUT_MS:-12000}"
+OPENCLAW_GATEWAY_STRICT="${OPENCLAW_GATEWAY_STRICT:-0}"
+OPENCLAW_CHANNELS_PROBE="${OPENCLAW_CHANNELS_PROBE:-1}"
 
 BASE_INTERVAL="${BASE_INTERVAL:-60}"
 NIGHT_INTERVAL="${NIGHT_INTERVAL:-300}"
@@ -70,6 +74,145 @@ have_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+native_probes_enabled() {
+  case "${OPENCLAW_NATIVE_PROBES:-auto}" in
+    0|false|False|FALSE|off|Off|OFF|no|No|NO) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+probe_output_has() {
+  local file="$1"
+  local pattern="$2"
+  [ -f "$file" ] && grep -Eiq "$pattern" "$file"
+}
+
+log_probe_tail() {
+  local label="$1"
+  local file="$2"
+  [ -f "$file" ] || return 0
+  local line
+  line=$(grep -Eiv '^[[:space:]]*$' "$file" | head -n 1 | cut -c 1-220)
+  [ -n "$line" ] && log "${label}: ${line}"
+}
+
+probe_output_is_unsupported() {
+  local file="$1"
+  probe_output_has "$file" 'unknown command|unknown option|unknown argument|unrecognized option|not recognized|invalid command'
+}
+
+run_openclaw_probe() {
+  local label="$1"
+  local outfile="$2"
+  shift 2
+  "$@" >"$outfile" 2>&1
+}
+
+check_openclaw_gateway_rpc() {
+  native_probes_enabled || return 2
+  have_cmd openclaw || return 2
+
+  local out_file="${STATE_DIR}/last-openclaw-gateway-status.json"
+  if run_openclaw_probe "gateway status" "$out_file" \
+    openclaw gateway status --json --require-rpc --timeout "$OPENCLAW_HEALTH_TIMEOUT_MS"; then
+    if probe_output_has "$out_file" '"ok"[[:space:]]*:[[:space:]]*false'; then
+      log "OPENCLAW GATEWAY FAIL: gateway status reported ok=false"
+      log_probe_tail "OPENCLAW GATEWAY DETAIL" "$out_file"
+      return 1
+    fi
+    if probe_output_has "$out_file" '"degraded"[[:space:]]*:[[:space:]]*true'; then
+      log "OPENCLAW GATEWAY WARN: gateway RPC probe is reachable but degraded"
+      [ "${OPENCLAW_GATEWAY_STRICT:-0}" = "1" ] && return 1
+    fi
+    return 0
+  fi
+
+  local rc=$?
+  if [ "${OPENCLAW_NATIVE_PROBES:-auto}" = "auto" ] && probe_output_is_unsupported "$out_file"; then
+    log "OPENCLAW GATEWAY WARN: native gateway status probe is unsupported; falling back to local probes"
+    return 2
+  fi
+  log "OPENCLAW GATEWAY WARN: openclaw gateway status --require-rpc failed (rc=${rc}); falling back to local probes"
+  log_probe_tail "OPENCLAW GATEWAY DETAIL" "$out_file"
+  return 2
+}
+
+check_openclaw_health_snapshot() {
+  native_probes_enabled || return 2
+  have_cmd openclaw || return 2
+
+  local out_file="${STATE_DIR}/last-openclaw-health.json"
+  if run_openclaw_probe "health" "$out_file" \
+    openclaw health --json --verbose --timeout "$OPENCLAW_HEALTH_TIMEOUT_MS"; then
+    if probe_output_has "$out_file" '"ok"[[:space:]]*:[[:space:]]*false'; then
+      log "OPENCLAW CHANNEL FAIL: health snapshot reported ok=false"
+      log_probe_tail "OPENCLAW HEALTH DETAIL" "$out_file"
+      return 1
+    fi
+    return 0
+  fi
+
+  local rc=$?
+  if [ "${OPENCLAW_NATIVE_PROBES:-auto}" = "auto" ] && probe_output_is_unsupported "$out_file"; then
+    log "OPENCLAW CHANNEL WARN: native health probe is unsupported; falling back to URL probes"
+    return 2
+  fi
+  log "OPENCLAW CHANNEL FAIL: openclaw health live probe failed (rc=${rc})"
+  log_probe_tail "OPENCLAW HEALTH DETAIL" "$out_file"
+  return 1
+}
+
+check_openclaw_status_deep() {
+  native_probes_enabled || return 2
+  have_cmd openclaw || return 2
+
+  local out_file="${STATE_DIR}/last-openclaw-status-deep.txt"
+  if run_openclaw_probe "status deep" "$out_file" \
+    openclaw status --deep; then
+    if probe_output_has "$out_file" 'logged[ -]?out|loggedOut|disconnected|unhealthy|healthy[[:space:]]*:[[:space:]]*false|probe[[:space:]-]*failed|status[[:space:]]*:[[:space:]]*(409|410|411|412|413|414|415|500|501|502|503|504|515)|timeout'; then
+      log "OPENCLAW CHANNEL FAIL: status --deep contains failure keywords"
+      log_probe_tail "OPENCLAW STATUS DETAIL" "$out_file"
+      return 1
+    fi
+    return 0
+  fi
+
+  local rc=$?
+  if [ "${OPENCLAW_NATIVE_PROBES:-auto}" = "auto" ] && probe_output_is_unsupported "$out_file"; then
+    log "OPENCLAW CHANNEL WARN: status --deep is unsupported; falling back to other probes"
+    return 2
+  fi
+  log "OPENCLAW CHANNEL FAIL: openclaw status --deep failed (rc=${rc})"
+  log_probe_tail "OPENCLAW STATUS DETAIL" "$out_file"
+  return 1
+}
+
+check_openclaw_channels_status() {
+  native_probes_enabled || return 2
+  have_cmd openclaw || return 2
+  [ "${OPENCLAW_CHANNELS_PROBE:-1}" = "1" ] || return 2
+
+  local out_file="${STATE_DIR}/last-openclaw-channels-status.txt"
+  if run_openclaw_probe "channels status" "$out_file" \
+    openclaw channels status --probe; then
+    if probe_output_has "$out_file" 'logged[ -]?out|loggedOut|disconnected|unhealthy|healthy[[:space:]]*:[[:space:]]*false|probe[[:space:]-]*failed|status[[:space:]]*:[[:space:]]*(409|410|411|412|413|414|415|500|501|502|503|504|515)|timeout'; then
+      log "OPENCLAW CHANNEL FAIL: channels status contains failure keywords"
+      log_probe_tail "OPENCLAW CHANNEL DETAIL" "$out_file"
+      return 1
+    fi
+    return 0
+  fi
+
+  local rc=$?
+  if [ "${OPENCLAW_NATIVE_PROBES:-auto}" = "auto" ] && probe_output_is_unsupported "$out_file"; then
+    log "OPENCLAW CHANNEL WARN: native channels probe is unsupported; falling back to URL probes"
+    return 2
+  fi
+  log "OPENCLAW CHANNEL FAIL: openclaw channels status --probe failed (rc=${rc})"
+  log_probe_tail "OPENCLAW CHANNEL DETAIL" "$out_file"
+  return 1
+}
+
 http_probe() {
   local url="$1"
   local code
@@ -112,6 +255,14 @@ gateway_unit_active() {
 }
 
 check_gateway() {
+  local native_status=2
+  check_openclaw_gateway_rpc
+  native_status=$?
+  case "$native_status" in
+    0) return 0 ;;
+    1) return 1 ;;
+  esac
+
   if [ -n "${GATEWAY_HEALTH_URL:-}" ] && http_probe "$GATEWAY_HEALTH_URL"; then
     return 0
   fi
@@ -139,6 +290,28 @@ check_gateway() {
 }
 
 check_channel() {
+  local native_status=2
+  check_openclaw_health_snapshot
+  native_status=$?
+  case "$native_status" in
+    0) return 0 ;;
+    1)
+      check_openclaw_status_deep >/dev/null 2>&1 || true
+      check_openclaw_channels_status >/dev/null 2>&1 || true
+      return 1
+      ;;
+    2)
+      check_openclaw_status_deep
+      native_status=$?
+      [ "$native_status" -eq 0 ] && return 0
+      [ "$native_status" -eq 1 ] && return 1
+      check_openclaw_channels_status
+      native_status=$?
+      [ "$native_status" -eq 0 ] && return 0
+      [ "$native_status" -eq 1 ] && return 1
+      ;;
+  esac
+
   http_probe "$CHANNEL_URL"
 }
 
@@ -180,7 +353,7 @@ record_restart() {
   local count=0
   [ -f "$file" ] && count=$(cat "$file" 2>/dev/null || echo 0)
   printf '%s\n' "$((count + 1))" >"$file"
-  find "$STATE_DIR" -name 'restarts.*' -type f -mtime +2 -delete 2>/dev/null || true
+  find "$STATE_DIR" -name 'restarts.*' -type f -mtime +2 -exec rm -f {} + 2>/dev/null || true
 }
 
 restart_gateway() {
@@ -253,9 +426,9 @@ main() {
   local gw_status=0
   local wait_for=0
 
-  log "START: OpenClaw gateway watchdog ${WATCHDOG_VERSION}"
+  log "START: OpenClaw Gateway Resilience Guard ${WATCHDOG_VERSION}"
   log "CONFIG: ${CONFIG_FILE}"
-  log "TARGET: channel=${CHANNEL_URL} health=${GATEWAY_HEALTH_URL} service=${GATEWAY_SERVICE}"
+  log "TARGET: channel=${CHANNEL_URL} health=${GATEWAY_HEALTH_URL} service=${GATEWAY_SERVICE} native=${OPENCLAW_NATIVE_PROBES}"
 
   while true; do
     rotate_log_if_needed
