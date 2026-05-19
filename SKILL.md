@@ -1,5 +1,5 @@
 ---
-name: openclaw-weixin-gateway-watchdog
+name: gateway-watchdog-for-openclaw-weixin
 description: Install and operate a guarded watchdog that keeps OpenClaw Gateway and long-lived channels such as WeChat online by probing health, channel reachability, and general network status before restarting.
 tags:
   - openclaw
