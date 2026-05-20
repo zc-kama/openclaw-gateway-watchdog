@@ -20,6 +20,9 @@ $ConfigFile = Join-Path $ConfigDir "watchdog.json"
 New-Item -ItemType Directory -Force -Path $InstallDir, $ConfigDir, $StateDir | Out-Null
 Copy-Item -LiteralPath (Join-Path $SourceDir "gateway-watchdog.ps1") -Destination $InstallDir -Force
 Copy-Item -LiteralPath (Join-Path $SourceDir "uninstall-watchdog.ps1") -Destination $InstallDir -Force
+if (Test-Path -LiteralPath (Join-Path $SourceDir "dashboard")) {
+  Copy-Item -LiteralPath (Join-Path $SourceDir "dashboard") -Destination $InstallDir -Recurse -Force
+}
 foreach ($name in @("README.md", "README.zh-CN.md", "SKILL.md", "LICENSE")) {
   $path = Join-Path $SourceDir $name
   if (Test-Path -LiteralPath $path) { Copy-Item -LiteralPath $path -Destination $InstallDir -Force }
@@ -47,6 +50,13 @@ if (-not (Test-Path -LiteralPath $ConfigFile)) {
     OpenClawDiagAction = "log"
     OpenClawDiagFailuresBeforeAction = 2
     OpenClawDiagCommand = ""
+    DashboardEnabled = $true
+    DashboardHost = "127.0.0.1"
+    DashboardPort = 18790
+    DashboardActionsEnabled = $true
+    DashboardToken = (([guid]::NewGuid().ToString("N")) + ([guid]::NewGuid().ToString("N")).Substring(0, 16))
+    DashboardDir = (Join-Path $InstallDir "dashboard")
+    DashboardPython = ""
     ModelProbeEnabled = $false
     ModelEdgeProbeEnabled = $true
     ModelProbeInterval = 1800
@@ -90,4 +100,5 @@ if (-not $NoStart) {
 Write-Host "Installed Windows Task Scheduler task: $TaskName"
 Write-Host "Config: $ConfigFile"
 Write-Host "Log:    $(Join-Path $StateDir 'watchdog.log')"
+Write-Host "Dashboard: http://127.0.0.1:18790"
 Write-Host "Remove: powershell -ExecutionPolicy Bypass -File `"$InstallDir\uninstall-watchdog.ps1`""

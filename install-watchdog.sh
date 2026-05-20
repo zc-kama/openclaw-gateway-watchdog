@@ -141,6 +141,19 @@ xml_escape() {
     -e 's/"/\&quot;/g'
 }
 
+generate_token() {
+  if have_cmd openssl; then
+    openssl rand -hex 24
+    return 0
+  fi
+  if [ -r /dev/urandom ]; then
+    od -An -N24 -tx1 /dev/urandom | tr -d ' \n'
+    printf '\n'
+    return 0
+  fi
+  printf '%s-%s-%s\n' "$(date '+%s')" "$$" "$RANDOM"
+}
+
 require_cmd curl
 
 GATEWAY_SERVICE="${GATEWAY_SERVICE:-$(detect_gateway_service)}"
@@ -156,8 +169,13 @@ install -m 0644 "${SCRIPT_DIR}/install-watchdog.ps1" "${INSTALL_DIR}/install-wat
 install -m 0644 "${SCRIPT_DIR}/uninstall-watchdog.ps1" "${INSTALL_DIR}/uninstall-watchdog.ps1" 2>/dev/null || true
 [ -f "${SCRIPT_DIR}/README.md" ] && install -m 0644 "${SCRIPT_DIR}/README.md" "${INSTALL_DIR}/README.md"
 [ -f "${SCRIPT_DIR}/README.zh-CN.md" ] && install -m 0644 "${SCRIPT_DIR}/README.zh-CN.md" "${INSTALL_DIR}/README.zh-CN.md"
+if [ -d "${SCRIPT_DIR}/dashboard" ]; then
+  rm -rf "${INSTALL_DIR}/dashboard"
+  cp -R "${SCRIPT_DIR}/dashboard" "${INSTALL_DIR}/dashboard"
+fi
 
 if [ ! -f "$CONFIG_FILE" ]; then
+  DASHBOARD_TOKEN_VALUE="$(generate_token)"
   cat >"$CONFIG_FILE" <<EOF
 # OpenClaw Gateway Watchdog config.
 # Re-run install-watchdog.sh with flags or edit this file to override defaults.
@@ -182,6 +200,12 @@ OPENCLAW_LOG_WARN_PATTERNS="fetch failed|fetch timeout|LLM idle timeout|model si
 OPENCLAW_DIAG_ACTION="log"
 OPENCLAW_DIAG_FAILURES_BEFORE_ACTION="2"
 OPENCLAW_DIAG_COMMAND=""
+DASHBOARD_ENABLED="1"
+DASHBOARD_HOST="127.0.0.1"
+DASHBOARD_PORT="18790"
+DASHBOARD_ACTIONS_ENABLED="1"
+DASHBOARD_TOKEN="${DASHBOARD_TOKEN_VALUE}"
+DASHBOARD_DIR="${INSTALL_DIR}/dashboard"
 MODEL_PROBE_ENABLED="0"
 MODEL_EDGE_PROBE_ENABLED="1"
 MODEL_PROBE_INTERVAL="1800"
@@ -286,4 +310,5 @@ fi
 echo ""
 echo "Config:  ${CONFIG_FILE}"
 echo "Log:     ${STATE_DIR}/watchdog.log"
+echo "Dashboard: http://127.0.0.1:18790"
 echo "Remove:  bash ${INSTALL_DIR}/uninstall-watchdog.sh"

@@ -16,6 +16,15 @@ if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
   Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
 
+$DashboardPid = Join-Path $StateDir "dashboard.pid"
+if (Test-Path -LiteralPath $DashboardPid) {
+  $pidValue = Get-Content -LiteralPath $DashboardPid -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($pidValue) {
+    Stop-Process -Id ([int]$pidValue) -ErrorAction SilentlyContinue
+  }
+  Remove-Item -LiteralPath $DashboardPid -Force -ErrorAction SilentlyContinue
+}
+
 Remove-Item -LiteralPath $InstallDir -Recurse -Force -ErrorAction SilentlyContinue
 
 if ($Purge) {

@@ -4,7 +4,8 @@
 
 set -u
 
-WATCHDOG_VERSION="1.3.1"
+WATCHDOG_VERSION="1.4.0"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
 CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/openclaw-gateway-watchdog"
 CONFIG_FILE="${WATCHDOG_CONFIG:-${CONFIG_DIR}/watchdog.env}"
@@ -37,6 +38,13 @@ OPENCLAW_LOG_WARN_PATTERNS="${OPENCLAW_LOG_WARN_PATTERNS:-fetch failed|fetch tim
 OPENCLAW_DIAG_ACTION="${OPENCLAW_DIAG_ACTION:-log}"
 OPENCLAW_DIAG_FAILURES_BEFORE_ACTION="${OPENCLAW_DIAG_FAILURES_BEFORE_ACTION:-2}"
 OPENCLAW_DIAG_COMMAND="${OPENCLAW_DIAG_COMMAND:-}"
+DASHBOARD_ENABLED="${DASHBOARD_ENABLED:-1}"
+DASHBOARD_HOST="${DASHBOARD_HOST:-127.0.0.1}"
+DASHBOARD_PORT="${DASHBOARD_PORT:-18790}"
+DASHBOARD_ACTIONS_ENABLED="${DASHBOARD_ACTIONS_ENABLED:-0}"
+DASHBOARD_TOKEN="${DASHBOARD_TOKEN:-}"
+DASHBOARD_DIR="${DASHBOARD_DIR:-${SCRIPT_DIR}/dashboard}"
+DASHBOARD_PYTHON="${DASHBOARD_PYTHON:-}"
 MODEL_PROBE_ENABLED="${MODEL_PROBE_ENABLED:-0}"
 MODEL_EDGE_PROBE_ENABLED="${MODEL_EDGE_PROBE_ENABLED:-1}"
 MODEL_PROBE_INTERVAL="${MODEL_PROBE_INTERVAL:-1800}"
@@ -377,6 +385,20 @@ log_scan_enabled() {
   esac
 }
 
+dashboard_enabled() {
+  case "${DASHBOARD_ENABLED:-1}" in
+    0|false|False|FALSE|off|Off|OFF|no|No|NO) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+dashboard_actions_enabled() {
+  case "${DASHBOARD_ACTIONS_ENABLED:-1}" in
+    1|true|True|TRUE|on|On|ON|yes|Yes|YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 model_edge_probe_enabled() {
   case "${MODEL_EDGE_PROBE_ENABLED:-1}" in
     0|false|False|FALSE|off|Off|OFF|no|No|NO) return 1 ;;
@@ -405,6 +427,66 @@ interval_due() {
   local interval="$3"
   [ "$last" -eq 0 ] && return 0
   [ "$((now - last))" -ge "$interval" ]
+}
+
+dashboard_pid_file() {
+  printf '%s/dashboard.pid' "$STATE_DIR"
+}
+
+find_dashboard_python() {
+  if [ -n "${DASHBOARD_PYTHON:-}" ] && have_cmd "$DASHBOARD_PYTHON"; then
+    printf '%s\n' "$DASHBOARD_PYTHON"
+    return 0
+  fi
+  if have_cmd python3; then
+    printf '%s\n' "python3"
+    return 0
+  fi
+  if have_cmd python; then
+    printf '%s\n' "python"
+    return 0
+  fi
+  return 1
+}
+
+dashboard_alive() {
+  local pid_file
+  local pid
+  pid_file="$(dashboard_pid_file)"
+  [ -f "$pid_file" ] || return 1
+  pid="$(cat "$pid_file" 2>/dev/null || true)"
+  [ -n "$pid" ] || return 1
+  kill -0 "$pid" 2>/dev/null
+}
+
+start_dashboard() {
+  dashboard_enabled || return 0
+  dashboard_alive && return 0
+  [ -f "${DASHBOARD_DIR}/server.py" ] || {
+    log "DASHBOARD WARN: ${DASHBOARD_DIR}/server.py not found; dashboard disabled for this run"
+    DASHBOARD_ENABLED=0
+    return 0
+  }
+
+  local python_bin
+  python_bin="$(find_dashboard_python 2>/dev/null || true)"
+  [ -n "$python_bin" ] || {
+    log "DASHBOARD WARN: python3/python not found; dashboard disabled for this run"
+    DASHBOARD_ENABLED=0
+    return 0
+  }
+
+  local actions="0"
+  dashboard_actions_enabled && actions="1"
+  WATCHDOG_STATE_DIR="$STATE_DIR" \
+  WATCHDOG_CONFIG_FILE="$CONFIG_FILE" \
+  WATCHDOG_DASHBOARD_HOST="$DASHBOARD_HOST" \
+  WATCHDOG_DASHBOARD_PORT="$DASHBOARD_PORT" \
+  WATCHDOG_DASHBOARD_ACTIONS_ENABLED="$actions" \
+  WATCHDOG_DASHBOARD_TOKEN="$DASHBOARD_TOKEN" \
+    nohup "$python_bin" "${DASHBOARD_DIR}/server.py" >>"${STATE_DIR}/dashboard.log" 2>&1 &
+  printf '%s\n' "$!" >"$(dashboard_pid_file)"
+  log "DASHBOARD: http://${DASHBOARD_HOST}:${DASHBOARD_PORT}"
 }
 
 log_signal_categories() {
@@ -788,10 +870,12 @@ main() {
 
   log "START: OpenClaw Gateway Resilience Guard ${WATCHDOG_VERSION}"
   log "CONFIG: ${CONFIG_FILE}"
-  log "TARGET: channel=${CHANNEL_URL} health=${GATEWAY_HEALTH_URL} service=${GATEWAY_SERVICE} native=${OPENCLAW_NATIVE_PROBES} diag=${OPENCLAW_DIAG_ENABLED} model_probe=${MODEL_PROBE_ENABLED}"
+  log "TARGET: channel=${CHANNEL_URL} health=${GATEWAY_HEALTH_URL} service=${GATEWAY_SERVICE} native=${OPENCLAW_NATIVE_PROBES} diag=${OPENCLAW_DIAG_ENABLED} model_probe=${MODEL_PROBE_ENABLED} dashboard=${DASHBOARD_ENABLED}"
+  start_dashboard
 
   while true; do
     rotate_log_if_needed
+    start_dashboard
     now=$(date '+%s')
 
     check_gateway

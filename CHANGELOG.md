@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- Add a standalone local dashboard at `http://127.0.0.1:18790` that remains available when OpenClaw Gateway is down.
+- Add dashboard API summaries, log-signal charts, overnight timelines, status file freshness, safe config summaries, diagnostic export, and quick strategy presets.
+- Add guarded dashboard actions for run diagnostics, restart Gateway, and apply presets using a generated local action token.
+- Add an OpenClaw native plugin bridge that registers `/resilience-guard` and redirects to the external dashboard when Gateway is healthy.
+- Install dashboard files on Linux/WSL, macOS, and Windows.
+
 ## 1.3.1
 
 - Publish a ClawHub package that includes the Windows PowerShell installer, watchdog, and uninstaller files.

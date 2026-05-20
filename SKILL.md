@@ -1,6 +1,6 @@
 ---
 name: gateway-resilience-guard
-description: OpenClaw Gateway Resilience Guard keeps Gateway, channels, and optional model-provider probes observable after Wi-Fi changes, WSL sleep/resume, session expiry, provider timeouts, or partial outages. It uses native OpenClaw health/status checks, local gateway/channel/network probes, opt-in model calls, split-brain safeguards, backoff, restart limits, quiet hours, locking, log rotation, generated config, systemd, LaunchAgent, or Task Scheduler.
+description: OpenClaw Gateway Resilience Guard keeps Gateway, channels, logs, and optional model-provider probes observable after Wi-Fi changes, WSL sleep/resume, session expiry, provider timeouts, or partial outages. It adds a standalone localhost dashboard with charts, timelines, strategy presets, guarded actions, native OpenClaw health/status probes, split-brain safeguards, backoff, restart limits, systemd, LaunchAgent, Task Scheduler, and an optional OpenClaw plugin bridge.
 tags:
   - openclaw
   - gateway
@@ -22,6 +22,7 @@ requirements:
 permissions:
   - Writes a user-level systemd service, macOS LaunchAgent, or Windows scheduled task when requested.
   - Writes config and logs under user-level config/state directories.
+  - Starts a localhost dashboard on 127.0.0.1:18790 when Python is available.
   - Restarts OpenClaw Gateway through systemctl --user or openclaw gateway restart.
   - Optional model probe sends real OpenClaw model requests only when explicitly enabled.
 ---
@@ -58,6 +59,22 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File .\install-watchdog.ps1
 ```
 
+After install, open the standalone dashboard:
+
+```text
+http://127.0.0.1:18790/
+```
+
+The dashboard is served by the watchdog process, not Gateway, so it remains the recovery entry when Gateway is down.
+
+Optional Gateway-side bridge while Gateway is healthy:
+
+```bash
+openclaw plugins install ./openclaw-plugin
+openclaw plugins enable resilience-guard
+openclaw gateway restart
+```
+
 ## Operate
 
 ```bash
@@ -80,9 +97,10 @@ The watchdog restarts only after layered checks:
 3. Local gateway health URL/TCP and main channel URL fallbacks.
 4. General network URLs to avoid restarting during whole-machine network failure.
 5. Optional model-provider probe via `openclaw agent --json`; default action is evidence logging only.
-6. Backoff and hourly restart limits to avoid restart storms.
+6. Dashboard action token, backoff, and hourly restart limits to avoid restart storms.
 
 Model probing is disabled by default because it consumes real provider quota. To diagnose provider timeouts, set `MODEL_PROBE_ENABLED=1`, keep `MODEL_PROBE_ACTION=log`, and inspect `model-probe-history.jsonl` the next day.
 Diagnostic log scanning is enabled by default, but `OPENCLAW_DIAG_ACTION=log` keeps it non-invasive unless the operator explicitly opts into a restart or custom command.
+Use the dashboard strategy buttons for common modes: observe, overnight diagnosis, channel recovery, and conservative circuit breaker.
 
 Tell users to review `~/.config/openclaw-gateway-watchdog/watchdog.env` before publishing, sharing logs, or reporting issues.

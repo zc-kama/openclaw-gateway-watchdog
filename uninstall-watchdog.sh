@@ -38,6 +38,14 @@ if [ -f "${STATE_DIR}/watchdog.pid" ]; then
   rm -f "${STATE_DIR}/watchdog.pid"
 fi
 
+if [ -f "${STATE_DIR}/dashboard.pid" ]; then
+  pid="$(cat "${STATE_DIR}/dashboard.pid" 2>/dev/null || true)"
+  if [ -n "${pid:-}" ] && kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null || true
+  fi
+  rm -f "${STATE_DIR}/dashboard.pid"
+fi
+
 rm -f "$SERVICE_FILE" "$PLIST_FILE"
 if have_cmd systemctl && systemctl --user status >/dev/null 2>&1; then
   systemctl --user daemon-reload

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenClaw Resilience Guard</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">OpenClaw Watchdog</p>
+        <h1>Resilience Guard</h1>
+      </div>
+      <div class="top-actions">
+        <button id="refreshBtn" class="icon-btn" title="刷新">↻</button>
+        <button id="exportBtn" class="primary">导出诊断</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="status-pane">
+        <div id="mainStatus" class="status-dot unknown"></div>
+        <div>
+          <p class="muted">当前判断</p>
+          <h2 id="statusText">读取中</h2>
+          <p id="statusReason" class="muted">正在汇总 watchdog 状态。</p>
+        </div>
+      </div>
+      <div class="metric-strip">
+        <div><strong id="restartCount">0</strong><span>近期重启</span></div>
+        <div><strong id="categoryCount">0</strong><span>异常类别</span></div>
+        <div><strong id="modelOk">0</strong><span>模型成功</span></div>
+        <div><strong id="modelFail">0</strong><span>模型失败</span></div>
+      </div>
+    </section>
+
+    <section class="grid main-grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h3>链路分层</h3>
+          <span id="updatedAt" class="muted"></span>
+        </div>
+        <div id="layers" class="layers"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h3>异常分类</h3>
+          <span class="muted">OpenClaw logs</span>
+        </div>
+        <canvas id="categoryChart" height="180"></canvas>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel wide">
+        <div class="panel-head">
+          <h3>凌晨时间线</h3>
+          <span class="muted">diagnostics + probes</span>
+        </div>
+        <canvas id="timelineChart" height="160"></canvas>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h3>快速策略</h3>
+          <span id="actionState" class="pill">只读</span>
+        </div>
+        <div class="preset-grid">
+          <button data-preset="observe">观察模式</button>
+          <button data-preset="overnight">夜间诊断</button>
+          <button data-preset="channel-recovery">通道恢复</button>
+          <button data-preset="conservative">保守熔断</button>
+        </div>
+        <div class="danger-row">
+          <button id="diagBtn">立即诊断</button>
+          <button id="restartBtn" class="danger">重启 Gateway</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h3>配置摘要</h3>
+          <span class="muted">敏感项已遮盖</span>
+        </div>
+        <dl id="configList" class="config-list"></dl>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h3>状态文件</h3>
+          <span class="muted">mtime</span>
+        </div>
+        <div id="fileList" class="file-list"></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3>最近日志</h3>
+        <span class="muted">watchdog.log</span>
+      </div>
+      <pre id="logTail" class="log"></pre>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>

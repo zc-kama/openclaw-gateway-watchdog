@@ -49,6 +49,8 @@ OpenClaw Gateway 和通道插件是长连接系统。电脑睡眠、切换 Wi-Fi
 | --- | --- |
 | `gateway-watchdog.sh` | 主守护脚本，负责探测、退避、熔断、日志、单实例锁和重启决策。 |
 | `gateway-watchdog.ps1` | Windows 原生守护脚本，用于 Task Scheduler。 |
+| `dashboard/` | 独立本地 Web UI 和 API，由 watchdog 自己提供，不依赖 Gateway。 |
+| `openclaw-plugin/` | 可选 OpenClaw 原生插件桥接入口，把 `/resilience-guard` 跳转到独立 dashboard。 |
 | `install-watchdog.sh` | Linux/WSL/macOS 安装脚本，自动复制文件、生成配置、创建 systemd 用户服务或 macOS LaunchAgent。 |
 | `install-watchdog.ps1` | Windows 安装脚本，创建配置和计划任务。 |
 | `uninstall-watchdog.sh` | 卸载脚本，停止服务并删除安装目录。 |
@@ -89,6 +91,43 @@ Windows PowerShell：
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install-watchdog.ps1
 ```
+
+## 图形化 Dashboard
+
+安装后会启用一个独立本地 dashboard：
+
+```text
+http://127.0.0.1:18790/
+```
+
+这个页面由 watchdog 自己提供，不依赖 OpenClaw Gateway。所以 Gateway 挂掉时，它仍然可以打开，看到最后一次诊断证据。
+
+它包含：
+
+- Gateway、通道、外部网络、OpenClaw 日志、模型 provider 的分层状态。
+- provider timeout、代理/网络、限流、鉴权、通道 session、Gateway degraded、配置热加载、任务运行时异常的分类图表。
+- 凌晨时间线，把诊断记录和模型探针结果串起来看。
+- 状态文件新鲜度，避免把过期快照误认为当前状态。
+- 快速策略按钮：观察模式、夜间诊断、通道恢复、保守熔断。
+- 受保护操作：立即诊断、重启 Gateway、应用策略、导出诊断 JSON。
+
+Dashboard 操作只绑定 localhost，并使用安装时生成的 `DASHBOARD_TOKEN` 保护。token 只注入同源页面，不会写入日志。
+
+可选 OpenClaw 插件桥接入口：
+
+```bash
+openclaw plugins install ./openclaw-plugin
+openclaw plugins enable resilience-guard
+openclaw gateway restart
+```
+
+Gateway 正常时可以打开：
+
+```text
+http://127.0.0.1:18789/resilience-guard
+```
+
+这个路由会跳转到外部 dashboard。它只是方便入口；真正救急的入口仍然是 `http://127.0.0.1:18790/`。
 
 安装后会生成：
 
@@ -164,6 +203,12 @@ OPENCLAW_LOG_WARN_PATTERNS="fetch failed|fetch timeout|LLM idle timeout|model si
 OPENCLAW_DIAG_ACTION="log"
 OPENCLAW_DIAG_FAILURES_BEFORE_ACTION="2"
 OPENCLAW_DIAG_COMMAND=""
+DASHBOARD_ENABLED="1"
+DASHBOARD_HOST="127.0.0.1"
+DASHBOARD_PORT="18790"
+DASHBOARD_ACTIONS_ENABLED="1"
+DASHBOARD_TOKEN="安装时生成"
+DASHBOARD_DIR="~/.local/share/openclaw-gateway-watchdog/dashboard"
 MODEL_PROBE_ENABLED="0"
 MODEL_EDGE_PROBE_ENABLED="1"
 MODEL_PROBE_INTERVAL="1800"
@@ -303,8 +348,8 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.3.1 \
-  --changelog "Include Windows PowerShell scripts in the ClawHub package"
+  --version 1.4.0 \
+  --changelog "Add standalone dashboard and OpenClaw plugin bridge"
 ```
 
 发布前需要先执行 `clawhub login` 完成 CLI 登录。

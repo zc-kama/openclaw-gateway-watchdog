@@ -49,6 +49,8 @@ Model probe failures default to evidence logging only; users can opt in to resta
 | --- | --- |
 | `gateway-watchdog.sh` | Main daemon loop: probes, backoff, restart decisions, log rotation, single-instance lock. |
 | `gateway-watchdog.ps1` | Windows-native daemon loop for Task Scheduler. |
+| `dashboard/` | Standalone local Web UI and API served by the watchdog, independent of Gateway. |
+| `openclaw-plugin/` | Optional native OpenClaw plugin bridge that redirects `/resilience-guard` to the standalone dashboard. |
 | `install-watchdog.sh` | Linux/WSL/macOS installer: copies files, writes config, creates systemd user service or macOS LaunchAgent. |
 | `install-watchdog.ps1` | Windows installer: creates config and a Task Scheduler job. |
 | `uninstall-watchdog.sh` | Stops and removes the service and installed scripts. |
@@ -89,6 +91,43 @@ Windows PowerShell:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\install-watchdog.ps1
 ```
+
+## Dashboard
+
+The installer enables a standalone local dashboard:
+
+```text
+http://127.0.0.1:18790/
+```
+
+This dashboard is served by the watchdog, not by OpenClaw Gateway. If Gateway is down, the dashboard can still open and show the last known evidence.
+
+It includes:
+
+- Gateway, channel, network, OpenClaw log, and model-provider status.
+- Category charts for provider timeout, proxy/network, rate-limit, auth, channel session, Gateway degraded, config reload, and task runtime warnings.
+- Overnight timeline combining diagnostics and model probe results.
+- Status-file freshness checks so stale data is obvious.
+- Quick strategy buttons: observe, overnight diagnosis, channel recovery, and conservative circuit breaker.
+- Guarded actions: run diagnostics, restart Gateway, apply presets, and export a diagnostic JSON bundle.
+
+Dashboard actions are bound to localhost and protected with the generated `DASHBOARD_TOKEN`. The token is injected only into the same-origin dashboard page. A random token is written during install; the value is not shown in logs.
+
+Optional OpenClaw plugin bridge:
+
+```bash
+openclaw plugins install ./openclaw-plugin
+openclaw plugins enable resilience-guard
+openclaw gateway restart
+```
+
+Then open the Gateway route while Gateway is healthy:
+
+```text
+http://127.0.0.1:18789/resilience-guard
+```
+
+That route redirects to the external dashboard. It is a convenience entry only; the external dashboard remains the recovery entry when Gateway is unavailable.
 
 The installer writes:
 
@@ -164,6 +203,12 @@ OPENCLAW_LOG_WARN_PATTERNS="fetch failed|fetch timeout|LLM idle timeout|model si
 OPENCLAW_DIAG_ACTION="log"
 OPENCLAW_DIAG_FAILURES_BEFORE_ACTION="2"
 OPENCLAW_DIAG_COMMAND=""
+DASHBOARD_ENABLED="1"
+DASHBOARD_HOST="127.0.0.1"
+DASHBOARD_PORT="18790"
+DASHBOARD_ACTIONS_ENABLED="1"
+DASHBOARD_TOKEN="generated-at-install"
+DASHBOARD_DIR="~/.local/share/openclaw-gateway-watchdog/dashboard"
 MODEL_PROBE_ENABLED="0"
 MODEL_EDGE_PROBE_ENABLED="1"
 MODEL_PROBE_INTERVAL="1800"
@@ -293,8 +338,8 @@ This repository includes `SKILL.md`, so it can also be republished as an OpenCla
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.3.1 \
-  --changelog "Include Windows PowerShell scripts in the ClawHub package"
+  --version 1.4.0 \
+  --changelog "Add standalone dashboard and OpenClaw plugin bridge"
 ```
 
 ClawHub requires CLI authentication. Run `clawhub login` first.

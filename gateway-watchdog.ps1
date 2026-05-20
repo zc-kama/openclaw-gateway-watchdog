@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
-$Version = "1.3.1"
+$Version = "1.4.0"
 
 $ConfigDir = Join-Path $env:APPDATA "openclaw-gateway-watchdog"
 $StateDir = Join-Path $env:LOCALAPPDATA "openclaw-gateway-watchdog"
@@ -32,6 +32,13 @@ $DefaultConfig = [ordered]@{
   OpenClawDiagAction = "log"
   OpenClawDiagFailuresBeforeAction = 2
   OpenClawDiagCommand = ""
+  DashboardEnabled = $true
+  DashboardHost = "127.0.0.1"
+  DashboardPort = 18790
+  DashboardActionsEnabled = $false
+  DashboardToken = ""
+  DashboardDir = Join-Path $PSScriptRoot "dashboard"
+  DashboardPython = ""
   ModelProbeEnabled = $false
   ModelEdgeProbeEnabled = $true
   ModelProbeInterval = 1800
@@ -219,8 +226,80 @@ function Test-LogScanEnabled {
   return -not (@("0", "false", "off", "no") -contains ([string]$Config.OpenClawLogScanEnabled).ToLowerInvariant())
 }
 
+function Test-DashboardEnabled {
+  return -not (@("0", "false", "off", "no") -contains ([string]$Config.DashboardEnabled).ToLowerInvariant())
+}
+
+function Test-DashboardActionsEnabled {
+  return @("1", "true", "on", "yes") -contains ([string]$Config.DashboardActionsEnabled).ToLowerInvariant()
+}
+
 function Test-ModelEdgeProbeEnabled {
   return -not (@("0", "false", "off", "no") -contains ([string]$Config.ModelEdgeProbeEnabled).ToLowerInvariant())
+}
+
+function Get-DashboardPidPath {
+  return Join-Path $StateDir "dashboard.pid"
+}
+
+function Test-DashboardAlive {
+  $pidPath = Get-DashboardPidPath
+  if (-not (Test-Path -LiteralPath $pidPath)) { return $false }
+  $raw = Get-Content -LiteralPath $pidPath -ErrorAction SilentlyContinue | Select-Object -First 1
+  $pidValue = 0
+  if (-not [int]::TryParse([string]$raw, [ref]$pidValue)) { return $false }
+  return [bool](Get-Process -Id $pidValue -ErrorAction SilentlyContinue)
+}
+
+function Get-DashboardPython {
+  if ($Config.DashboardPython) {
+    $cmd = Get-Command $Config.DashboardPython -ErrorAction SilentlyContinue
+    if ($cmd) { return @{ File = $cmd.Source; ArgsPrefix = "" } }
+  }
+  $python = Get-Command python -ErrorAction SilentlyContinue
+  if ($python) { return @{ File = $python.Source; ArgsPrefix = "" } }
+  $py = Get-Command py -ErrorAction SilentlyContinue
+  if ($py) { return @{ File = $py.Source; ArgsPrefix = "-3 " } }
+  return $null
+}
+
+function Start-Dashboard {
+  if (-not (Test-DashboardEnabled)) { return }
+  if (Test-DashboardAlive) { return }
+  $dashboardDir = [string]$Config.DashboardDir
+  if (-not $dashboardDir) { $dashboardDir = Join-Path $PSScriptRoot "dashboard" }
+  $serverPath = Join-Path $dashboardDir "server.py"
+  if (-not (Test-Path -LiteralPath $serverPath)) {
+    Write-Log "DASHBOARD WARN: $serverPath not found; dashboard disabled for this run"
+    $Config.DashboardEnabled = $false
+    return
+  }
+  $python = Get-DashboardPython
+  if (-not $python) {
+    Write-Log "DASHBOARD WARN: python/py not found; dashboard disabled for this run"
+    $Config.DashboardEnabled = $false
+    return
+  }
+  $actions = if (Test-DashboardActionsEnabled) { "1" } else { "0" }
+  $psi = [System.Diagnostics.ProcessStartInfo]::new()
+  $psi.FileName = $python.File
+  $psi.Arguments = "$($python.ArgsPrefix)`"$serverPath`""
+  $psi.WorkingDirectory = $dashboardDir
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow = $true
+  $psi.Environment["WATCHDOG_STATE_DIR"] = $StateDir
+  $psi.Environment["WATCHDOG_CONFIG_FILE"] = $ConfigPath
+  $psi.Environment["WATCHDOG_DASHBOARD_HOST"] = [string]$Config.DashboardHost
+  $psi.Environment["WATCHDOG_DASHBOARD_PORT"] = [string]$Config.DashboardPort
+  $psi.Environment["WATCHDOG_DASHBOARD_ACTIONS_ENABLED"] = $actions
+  $psi.Environment["WATCHDOG_DASHBOARD_TOKEN"] = [string]$Config.DashboardToken
+  try {
+    $proc = [System.Diagnostics.Process]::Start($psi)
+    Set-Content -LiteralPath (Get-DashboardPidPath) -Value $proc.Id
+    Write-Log "DASHBOARD: http://$($Config.DashboardHost):$($Config.DashboardPort)"
+  } catch {
+    Write-Log "DASHBOARD WARN: failed to start dashboard: $($_.Exception.Message)"
+  }
 }
 
 function Get-LogSignalCategories {
@@ -599,9 +678,11 @@ try {
   $lastModelProbeAt = [DateTimeOffset]::FromUnixTimeSeconds(0)
   Write-Log "START: OpenClaw Gateway Resilience Guard $Version"
   Write-Log "CONFIG: $ConfigPath"
+  Start-Dashboard
 
   while ($true) {
     Rotate-LogIfNeeded
+    Start-Dashboard
     $gateway = Test-Gateway
     if ($gateway -eq 1) {
       $failCount += 1
