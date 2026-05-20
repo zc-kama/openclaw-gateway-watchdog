@@ -37,6 +37,27 @@ if (-not (Test-Path -LiteralPath $ConfigFile)) {
     OpenClawHealthTimeoutMs = 12000
     OpenClawGatewayStrict = $false
     OpenClawChannelsProbe = $true
+    OpenClawDiagEnabled = $true
+    OpenClawDiagInterval = 300
+    OpenClawLogScanEnabled = $true
+    OpenClawLogLimit = 200
+    OpenClawLogSignalLimit = 40
+    OpenClawLogTimeoutMs = 15000
+    OpenClawLogWarnPatterns = "fetch failed|fetch timeout|LLM idle timeout|model silent|chat/completions|providerRuntimeFailureKind|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|socket hang up|TLS|CERT_|proxy|429|rate limit|quota|unauthorized|invalid api key|embedded abort settle timed out|embedded run failover decision|memory-core: narrative generation ended with status=timeout|dreaming.*timeout|health-monitor|event loop|degraded|restartPending|session expired|errcode=-14|Monitor.*stopped|monitor.*ended|config hot reload|config change detected|cron.*error|task.*failed"
+    OpenClawDiagAction = "log"
+    OpenClawDiagFailuresBeforeAction = 2
+    OpenClawDiagCommand = ""
+    ModelProbeEnabled = $false
+    ModelEdgeProbeEnabled = $true
+    ModelProbeInterval = 1800
+    ModelProbeTimeout = 120
+    ModelProbeFailuresBeforeAction = 2
+    ModelProbeAction = "log"
+    ModelProbeCommand = ""
+    ModelProbeModel = ""
+    ModelProbeThinking = "off"
+    ModelProbeSessionId = "watchdog-model-probe"
+    ModelProbeMessage = "Reply with exactly OK."
     BaseInterval = 60
     NightInterval = 300
     MaxInterval = 1800

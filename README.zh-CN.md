@@ -19,15 +19,18 @@ OpenClaw Gateway 和通道插件是长连接系统。电脑睡眠、切换 Wi-Fi
 
 ## 工作原理
 
-看门狗使用三层健康检查，从浅到深判断是否真的需要重启：
+看门狗使用分层健康检查，从浅到深判断是否真的需要重启：
 
 | 层级 | 检查对象 | 作用 |
 | --- | --- | --- |
 | Gateway 本机状态 | `openclaw gateway status --json --require-rpc`、本机 health URL、本机 TCP 端口、服务/进程兜底 | 判断 OpenClaw Gateway 是否已经挂掉或本机不可达。 |
 | 通道状态 | `openclaw health --json --verbose`、`openclaw status --deep`、可选 `openclaw channels status --probe`，最后才是 URL 兜底 | 优先使用 OpenClaw 自己的全通道健康模型；CLI 不支持时再退回 URL 探测。 |
+| 运行时诊断 | `openclaw models status --json`、`openclaw logs --plain`、WARN/ERROR 分类 | 在动作前区分 provider、代理/网络、鉴权/限流、gateway、通道 session、配置热加载和任务运行时证据。 |
+| 模型 API，可选 | 使用 `openclaw agent --json` 走 OpenClaw 当前配置的模型 provider | 判断 Gateway 和通道都健康时，真正卡住的是不是模型 API 链路。默认关闭，因为它会真实消耗模型调用。 |
 | 外部网络状态 | 百度、QQ、微信 API 等多个独立 URL | 排除全局断网，避免电脑没网时误重启 gateway。 |
 
 核心策略是：gateway 真挂了就立即重启；通道不通时先确认不是全局断网；网络正常但通道持续失败，才进入退避等待和重启流程。
+模型探针默认只记录证据日志；如果你显式配置，也可以在连续失败后重启 gateway 或执行自定义命令。
 
 ## 恢复策略
 
@@ -35,6 +38,7 @@ OpenClaw Gateway 和通道插件是长连接系统。电脑睡眠、切换 Wi-Fi
 - 通道 URL 失败：累计失败次数，进入故障流程。
 - 外部网络全部失败：认为是全局断网，只等待，不重启。
 - 外部网络正常但通道仍失败：指数退避后再次确认，再重启 gateway。
+- OpenClaw 日志出现 WARN/ERROR：先分类和记录证据，默认只写日志。
 - 连续 5 次通道探测成功后，清空失败状态。
 - 每小时最多重启固定次数，防止网络抖动时形成重启风暴。
 - 深夜可以降低检查频率，减少无意义日志。
@@ -150,6 +154,27 @@ OPENCLAW_NATIVE_PROBES="auto"
 OPENCLAW_HEALTH_TIMEOUT_MS="12000"
 OPENCLAW_GATEWAY_STRICT="0"
 OPENCLAW_CHANNELS_PROBE="1"
+OPENCLAW_DIAG_ENABLED="1"
+OPENCLAW_DIAG_INTERVAL="300"
+OPENCLAW_LOG_SCAN_ENABLED="1"
+OPENCLAW_LOG_LIMIT="200"
+OPENCLAW_LOG_SIGNAL_LIMIT="40"
+OPENCLAW_LOG_TIMEOUT_MS="15000"
+OPENCLAW_LOG_WARN_PATTERNS="fetch failed|fetch timeout|LLM idle timeout|model silent|..."
+OPENCLAW_DIAG_ACTION="log"
+OPENCLAW_DIAG_FAILURES_BEFORE_ACTION="2"
+OPENCLAW_DIAG_COMMAND=""
+MODEL_PROBE_ENABLED="0"
+MODEL_EDGE_PROBE_ENABLED="1"
+MODEL_PROBE_INTERVAL="1800"
+MODEL_PROBE_TIMEOUT="120"
+MODEL_PROBE_FAILURES_BEFORE_ACTION="2"
+MODEL_PROBE_ACTION="log"
+MODEL_PROBE_COMMAND=""
+MODEL_PROBE_MODEL=""
+MODEL_PROBE_THINKING="off"
+MODEL_PROBE_SESSION_ID="watchdog-model-probe"
+MODEL_PROBE_MESSAGE="Reply with exactly OK."
 BASE_INTERVAL="60"
 NIGHT_INTERVAL="300"
 MAX_INTERVAL="1800"
@@ -172,13 +197,92 @@ Windows 的配置是 JSON：
 
 如果你的 OpenClaw CLI 版本太旧，不支持 `openclaw health` 或 `openclaw status --deep`，可以把 `OpenClawNativeProbes` 设为 `false`。
 
+### OpenClaw 诊断和日志信号
+
+这个 watchdog 不只是 ping 一个 URL。它会每隔 `OPENCLAW_DIAG_INTERVAL` 秒采集一组 OpenClaw 运行快照：
+
+```text
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-gateway-status.json
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-health.json
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-model-status.json
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-status-deep.txt
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-logs.txt
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-log-signals.txt
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-log-signal-categories.txt
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-diagnostics.jsonl
+```
+
+`last-openclaw-log-signals.txt` 来自 `openclaw logs --plain` 的过滤结果，会把常见异常归类成 `provider_timeout`、`proxy_or_network`、`provider_rate_limit`、`provider_auth`、`abort_stuck`、`memory_dream_timeout`、`channel_session`、`gateway_degraded`、`config_reload`、`task_runtime` 等类别。
+
+默认策略是 `OPENCLAW_DIAG_ACTION="log"`，因为 WARN 是证据，不一定等于“应该马上重启”。如果你显式改成 `restart` 或 `command`，也必须连续多次出现诊断异常，并且外部网络探测正常，才会执行动作。
+
+排查时可以这样判断：
+
+| 证据 | 更可能的问题范围 | 默认策略 |
+| --- | --- | --- |
+| Gateway status/health 挂了 | Gateway 进程或 RPC 链路 | 走原本的 Gateway 策略，立即重启。 |
+| 通道探测失败，但外部网络正常 | 通道或 session 链路 | 退避、复查，仍失败再重启 Gateway。 |
+| OpenClaw 日志显示 provider timeout，模型探针也失败 | 模型 provider/API 链路 | 先记录证据；可选自定义动作。单纯重启 Gateway 未必有用。 |
+| OpenClaw 日志显示 provider timeout，但模型探针成功 | OpenClaw 运行时、任务、session 或特定请求路径 | 继续保留证据，不把锅直接甩给 provider。 |
+| 日志显示 proxy/DNS/TLS 错误 | 本机代理、DNS、TLS 或运营商路由 | 记录证据，避免重启风暴，优先修代理/网络路由。 |
+| 日志显示 session expired 或 monitor stopped | 通道插件/session | 确认后重启 Gateway 往往有价值。 |
+
+### 可选模型探针
+
+如果你想判断问题到底出在 Gateway/通道，还是模型 provider 链路，可以显式开启：
+
+```bash
+MODEL_PROBE_ENABLED="1"
+```
+
+开启后，看门狗会先读取 OpenClaw 当前模型 provider 的 `baseUrl`，做一次不带凭据、不消耗 token 的入口连通性探测。然后再执行端到端模型探针：
+
+```bash
+openclaw agent --session-id "$MODEL_PROBE_SESSION_ID" \
+  --thinking "$MODEL_PROBE_THINKING" \
+  --timeout "$MODEL_PROBE_TIMEOUT" \
+  --json \
+  --message "$MODEL_PROBE_MESSAGE"
+```
+
+如果 `MODEL_PROBE_MODEL` 为空，就使用 OpenClaw 当前配置的默认模型。结果会写入主日志，以及：
+
+```text
+~/.local/state/openclaw-gateway-watchdog/model-probe-history.jsonl
+~/.local/state/openclaw-gateway-watchdog/last-openclaw-model-probe.json
+~/.local/state/openclaw-gateway-watchdog/last-model-api-edge-probe.txt
+```
+
+排查凌晨模型 provider 超时，可以先用这组设置：
+
+```bash
+MODEL_PROBE_ENABLED="1"
+MODEL_EDGE_PROBE_ENABLED="1"
+MODEL_PROBE_INTERVAL="600"
+MODEL_PROBE_TIMEOUT="120"
+MODEL_PROBE_ACTION="log"
+MODEL_PROBE_THINKING="off"
+MODEL_PROBE_MESSAGE="Reply with exactly OK."
+```
+
+`MODEL_PROBE_ACTION` 支持：
+
+- `log`：只记录证据，默认策略。
+- `restart`：连续失败达到 `MODEL_PROBE_FAILURES_BEFORE_ACTION` 后重启 gateway，但会先确认外部网络不是全局断网。
+- `command`：连续失败后执行 `MODEL_PROBE_COMMAND`。
+
+这个功能会真实调用模型，可能消耗额度或费用。日志不会打印 API key，但会记录 provider/model 名称、耗时、退出状态和第一行错误摘要。
+`MODEL_EDGE_PROBE_ENABLED` 不使用凭据，也不调用 `/chat/completions`；它只检查 provider API 入口，比如 `https://api.deepseek.com`，是否能快速完成 DNS/TLS/HTTP 连接。
+
 ## 安全边界
 
-这个项目不修改 OpenClaw 配置、不读取 token、不改微信插件源码、不处理消息内容。它只做三件事：
+这个项目不修改 OpenClaw 配置、不改微信插件源码、不处理消息内容。默认情况下它只做三件事：
 
 1. 探测本机 gateway 和外部 URL。
 2. 写自己的日志和状态文件。
 3. 在满足保护条件后执行配置好的 gateway 重启命令。
+
+可选模型探针只有在你显式开启后才会发起真实模型请求。
 
 分享日志前，请检查里面是否包含本机路径、服务名或私有通道地址。
 
@@ -199,8 +303,8 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.2.0 \
-  --changelog "Add native OpenClaw probes and cross-platform installers"
+  --version 1.3.0 \
+  --changelog "Add opt-in model-provider probes"
 ```
 
 发布前需要先执行 `clawhub login` 完成 CLI 登录。

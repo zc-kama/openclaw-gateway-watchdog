@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0
+
+- Add an opt-in model-provider probe that uses `openclaw agent --json` against the configured OpenClaw model path.
+- Add a no-credential provider edge probe that checks the configured provider `baseUrl` before the end-to-end model call.
+- Add OpenClaw runtime diagnostics that snapshot gateway status, health, model status, deep status, and recent OpenClaw logs.
+- Classify log signals for provider timeout, proxy/network, rate limit, auth, channel session, gateway degraded, config reload, task runtime, and related warning families.
+- Record model probe evidence in the main log and `model-probe-history.jsonl` without logging API keys.
+- Add configurable model failure actions: log-only, gateway restart, or a custom command after consecutive failures.
+- Document safe overnight diagnostics for separating Gateway/channel failures from model-provider timeouts.
+
 ## 1.2.0
 
 - Add OpenClaw-native health probing via `openclaw gateway status --json --require-rpc`, `openclaw health --json --verbose`, and `openclaw status --deep`.
