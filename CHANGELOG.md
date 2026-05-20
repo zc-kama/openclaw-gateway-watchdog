@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1
+
+- Publish a ClawHub package that includes the Windows PowerShell installer, watchdog, and uninstaller files.
+
 ## 1.3.0
 
 - Add an opt-in model-provider probe that uses `openclaw agent --json` against the configured OpenClaw model path.

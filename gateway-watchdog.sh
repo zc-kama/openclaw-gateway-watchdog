@@ -4,7 +4,7 @@
 
 set -u
 
-WATCHDOG_VERSION="1.3.0"
+WATCHDOG_VERSION="1.3.1"
 
 CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/openclaw-gateway-watchdog"
 CONFIG_FILE="${WATCHDOG_CONFIG:-${CONFIG_DIR}/watchdog.env}"

@@ -293,8 +293,8 @@ This repository includes `SKILL.md`, so it can also be republished as an OpenCla
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.3.0 \
-  --changelog "Add opt-in model-provider probes"
+  --version 1.3.1 \
+  --changelog "Include Windows PowerShell scripts in the ClawHub package"
 ```
 
 ClawHub requires CLI authentication. Run `clawhub login` first.

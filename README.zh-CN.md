@@ -303,8 +303,8 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.3.0 \
-  --changelog "Add opt-in model-provider probes"
+  --version 1.3.1 \
+  --changelog "Include Windows PowerShell scripts in the ClawHub package"
 ```
 
 发布前需要先执行 `clawhub login` 完成 CLI 登录。
