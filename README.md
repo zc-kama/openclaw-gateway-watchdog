@@ -106,10 +106,11 @@ It includes:
 
 - Gateway, channel, network, OpenClaw log, and model-provider status.
 - Category charts for provider timeout, proxy/network, rate-limit, auth, channel session, Gateway degraded, config reload, and task runtime warnings.
-- Overnight timeline combining diagnostics and model probe results.
+- Event trend chart with separate lanes for API failures, log warnings, successful model probes, and healthy diagnostics.
+- Chinese/English language switching and Light, Dark, Ocean, and Forest themes.
 - Status-file freshness checks so stale data is obvious.
 - Quick strategy buttons: observe, overnight diagnosis, channel recovery, and conservative circuit breaker.
-- Guarded actions: run diagnostics, restart Gateway, apply presets, and export a diagnostic JSON bundle.
+- Guarded actions with an unlock flow: run diagnostics, restart Gateway, apply presets, and export a diagnostic JSON bundle.
 
 Dashboard actions are bound to localhost and protected with the generated `DASHBOARD_TOKEN`. The token is injected only into the same-origin dashboard page. A random token is written during install; the value is not shown in logs.
 
@@ -338,8 +339,8 @@ This repository includes `SKILL.md`, so it can also be republished as an OpenCla
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.4.0 \
-  --changelog "Add standalone dashboard and OpenClaw plugin bridge"
+  --version 1.4.1 \
+  --changelog "Polish dashboard layout, language, themes, charts, logs, and guarded action unlock"
 ```
 
 ClawHub requires CLI authentication. Run `clawhub login` first.

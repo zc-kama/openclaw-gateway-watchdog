@@ -106,10 +106,11 @@ http://127.0.0.1:18790/
 
 - Gateway、通道、外部网络、OpenClaw 日志、模型 provider 的分层状态。
 - provider timeout、代理/网络、限流、鉴权、通道 session、Gateway degraded、配置热加载、任务运行时异常的分类图表。
-- 凌晨时间线，把诊断记录和模型探针结果串起来看。
+- 事件趋势图，把 API 失败、日志 WARN、模型探针成功、健康诊断分成不同泳道，并显示时间轴刻度。
+- 中英文语言切换，以及 Light、Dark、Ocean、Forest 四套主题。
 - 状态文件新鲜度，避免把过期快照误认为当前状态。
 - 快速策略按钮：观察模式、夜间诊断、通道恢复、保守熔断。
-- 受保护操作：立即诊断、重启 Gateway、应用策略、导出诊断 JSON。
+- 带解锁流程的受保护操作：立即诊断、重启 Gateway、应用策略、导出诊断 JSON。
 
 Dashboard 操作只绑定 localhost，并使用安装时生成的 `DASHBOARD_TOKEN` 保护。token 只注入同源页面，不会写入日志。
 
@@ -348,8 +349,8 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.4.0 \
-  --changelog "Add standalone dashboard and OpenClaw plugin bridge"
+  --version 1.4.1 \
+  --changelog "Polish dashboard layout, language, themes, charts, logs, and guarded action unlock"
 ```
 
 发布前需要先执行 `clawhub login` 完成 CLI 登录。

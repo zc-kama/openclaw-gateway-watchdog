@@ -1,6 +1,6 @@
 ---
 name: gateway-resilience-guard
-description: OpenClaw Gateway Resilience Guard keeps Gateway, channels, logs, and optional model-provider probes observable after Wi-Fi changes, WSL sleep/resume, session expiry, provider timeouts, or partial outages. It adds a standalone localhost dashboard with charts, timelines, strategy presets, guarded actions, native OpenClaw health/status probes, split-brain safeguards, backoff, restart limits, systemd, LaunchAgent, Task Scheduler, and an optional OpenClaw plugin bridge.
+description: OpenClaw Gateway Resilience Guard keeps Gateway, channels, logs, and optional model-provider probes observable after Wi-Fi changes, WSL sleep/resume, session expiry, provider timeouts, or partial outages. It adds a localhost dashboard with charts, event trends, language/theme switching, strategy presets, guarded action unlock, native OpenClaw health probes, restart safeguards, systemd, LaunchAgent, Task Scheduler, and an optional OpenClaw plugin bridge.
 tags:
   - openclaw
   - gateway

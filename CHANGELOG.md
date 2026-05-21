@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.1
+
+- Redesign the dashboard with a sidebar layout, stronger visual grouping, and selectable Light, Dark, Ocean, and Forest themes.
+- Add Chinese/English language switching for dashboard labels, buttons, hints, legends, and notifications.
+- Fix canvas redraw sizing so repeated refreshes do not stretch dashboard panels.
+- Replace "overnight timeline" with a general event trend chart that includes lanes, legends, and time-axis ticks.
+- Auto-follow the newest watchdog log lines while keeping a toggle for manual scrolling.
+- Add an unlock/lock action flow and strategy hover hints so guarded controls are discoverable.
+
 ## 1.4.0
 
 - Add a standalone local dashboard at `http://127.0.0.1:18790` that remains available when OpenClaw Gateway is down.

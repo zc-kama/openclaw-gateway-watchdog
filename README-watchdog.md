@@ -26,7 +26,7 @@ bash install-watchdog.sh --channel-url "https://你的通道地址/health"
 http://127.0.0.1:18790/
 ```
 
-它由 watchdog 自己提供，不依赖 OpenClaw Gateway。Gateway 挂掉时，这个页面仍然可以看状态、图表、策略、日志和诊断导出。
+它由 watchdog 自己提供，不依赖 OpenClaw Gateway。Gateway 挂掉时，这个页面仍然可以看状态、图表、策略、日志和诊断导出。Dashboard 支持中英文切换、主题切换、事件趋势图、异常分类图和受保护操作解锁。
 
 安装后它会默认采集 OpenClaw 诊断快照和日志信号，包括 gateway status、health、models status、status --deep 和 `openclaw logs --plain` 的 WARN/ERROR 摘要。关键证据在：
 

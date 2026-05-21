@@ -243,7 +243,7 @@ def build_status() -> dict:
     latest_model = model_history[-1] if model_history else {}
     return {
         "generatedAt": now_ms(),
-        "version": "1.4.0",
+        "version": "1.4.1",
         "stateDir": str(STATE_DIR),
         "configFile": str(CONFIG_FILE),
         "dashboard": {
@@ -394,7 +394,7 @@ def run_diagnostics() -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "OpenClawWatchdogDashboard/1.4.0"
+    server_version = "OpenClawWatchdogDashboard/1.4.1"
 
     def log_message(self, fmt: str, *args) -> None:
         line = "[%s] %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), fmt % args)
