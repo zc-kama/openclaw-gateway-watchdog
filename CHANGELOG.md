@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.2
+
+- Rework the dashboard sidebar into real view switching for Overview, Trends, Strategy, Logs, and Config instead of one long page.
+- Tighten the dashboard grid, panel sizing, button alignment, and sidebar polish for a cleaner operations-console layout.
+- Fix the trend chart axis label collision by removing the redundant x-axis title and reserving more space for tick labels.
+- Keep charts stable across refreshes by drawing only the active view and ignoring hidden canvases.
+- Move strategy explanations into centered button content and remove the sidebar localhost note.
+
 ## 1.4.1
 
 - Redesign the dashboard with a sidebar layout, stronger visual grouping, and selectable Light, Dark, Ocean, and Forest themes.

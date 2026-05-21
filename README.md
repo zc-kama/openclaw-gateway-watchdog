@@ -106,6 +106,7 @@ It includes:
 
 - Gateway, channel, network, OpenClaw log, and model-provider status.
 - Category charts for provider timeout, proxy/network, rate-limit, auth, channel session, Gateway degraded, config reload, and task runtime warnings.
+- Sidebar view switching for Overview, Trends, Strategy, Logs, and Config so monitoring, actions, and detail evidence are separated.
 - Event trend chart with separate lanes for API failures, log warnings, successful model probes, and healthy diagnostics.
 - Chinese/English language switching and Light, Dark, Ocean, and Forest themes.
 - Status-file freshness checks so stale data is obvious.
@@ -339,8 +340,8 @@ This repository includes `SKILL.md`, so it can also be republished as an OpenCla
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.4.1 \
-  --changelog "Polish dashboard layout, language, themes, charts, logs, and guarded action unlock"
+  --version 1.4.2 \
+  --changelog "Redesign dashboard navigation, alignment, trend chart axis, strategy controls, and visual system"
 ```
 
 ClawHub requires CLI authentication. Run `clawhub login` first.

@@ -13,25 +13,23 @@
         <span class="brand-mark">RG</span>
         <div>
           <strong>Resilience Guard</strong>
-          <span data-i18n="brandSub">OpenClaw 看门狗</span>
+          <span>OpenClaw</span>
         </div>
       </div>
-      <nav class="nav">
-        <a href="#overview" data-i18n="navOverview">总览</a>
-        <a href="#events" data-i18n="navEvents">趋势</a>
-        <a href="#strategy" data-i18n="navStrategy">策略</a>
-        <a href="#logs" data-i18n="navLogs">日志</a>
+      <nav class="nav" aria-label="Dashboard">
+        <button class="nav-item active" data-route="overview" data-i18n="navOverview">总览</button>
+        <button class="nav-item" data-route="trends" data-i18n="navTrends">趋势</button>
+        <button class="nav-item" data-route="strategy" data-i18n="navStrategy">策略</button>
+        <button class="nav-item" data-route="logs" data-i18n="navLogs">日志</button>
+        <button class="nav-item" data-route="settings" data-i18n="navSettings">配置</button>
       </nav>
-      <div class="side-note">
-        <span data-i18n="sideNote">独立运行在 localhost，Gateway 挂了也能打开。</span>
-      </div>
     </aside>
 
-    <main class="shell">
+    <main class="workspace">
       <header class="topbar">
         <div>
-          <p class="eyebrow">OpenClaw Watchdog</p>
-          <h1 data-i18n="pageTitle">恢复控制台</h1>
+          <p class="eyebrow">OPENCLAW WATCHDOG</p>
+          <h1 id="pageTitle">恢复控制台</h1>
         </div>
         <div class="top-actions">
           <select id="langSelect" title="Language">
@@ -44,101 +42,132 @@
             <option value="ocean">Ocean</option>
             <option value="forest">Forest</option>
           </select>
-          <button id="refreshBtn" class="icon-btn" title="刷新">↻</button>
+          <button id="refreshBtn" class="icon-btn" title="Refresh">↻</button>
           <button id="exportBtn" class="primary" data-i18n="export">导出诊断</button>
         </div>
       </header>
 
-    <section id="overview" class="hero">
-      <div class="status-pane">
-        <div id="mainStatus" class="status-dot unknown"></div>
-        <div>
-          <p class="muted" data-i18n="currentDecision">当前判断</p>
-          <h2 id="statusText">读取中</h2>
-          <p id="statusReason" class="muted">正在汇总 watchdog 状态。</p>
+      <section class="view active" data-view="overview">
+        <div class="status-strip">
+          <div class="status-summary">
+            <span id="mainStatus" class="status-dot unknown"></span>
+            <div>
+              <span class="label" data-i18n="currentDecision">当前判断</span>
+              <strong id="statusText">读取中</strong>
+              <p id="statusReason">正在汇总 watchdog 状态。</p>
+            </div>
+          </div>
+          <div class="metric-card"><strong id="restartCount">0</strong><span data-i18n="recentRestarts">近期重启</span></div>
+          <div class="metric-card"><strong id="categoryCount">0</strong><span data-i18n="signalTypes">异常类别</span></div>
+          <div class="metric-card"><strong id="modelOk">0</strong><span data-i18n="modelOk">模型成功</span></div>
+          <div class="metric-card"><strong id="modelFail">0</strong><span data-i18n="modelFail">模型失败</span></div>
         </div>
-      </div>
-      <div class="metric-strip">
-        <div><strong id="restartCount">0</strong><span data-i18n="recentRestarts">近期重启</span></div>
-        <div><strong id="categoryCount">0</strong><span data-i18n="signalTypes">异常类别</span></div>
-        <div><strong id="modelOk">0</strong><span data-i18n="modelOk">模型成功</span></div>
-        <div><strong id="modelFail">0</strong><span data-i18n="modelFail">模型失败</span></div>
-      </div>
-    </section>
 
-    <section class="grid main-grid">
-      <article class="panel">
-        <div class="panel-head">
-          <h3 data-i18n="layers">链路分层</h3>
-          <span id="updatedAt" class="muted"></span>
-        </div>
-        <div id="layers" class="layers"></div>
-      </article>
+        <div class="dashboard-grid">
+          <article class="panel span-7">
+            <div class="panel-head">
+              <h2 data-i18n="layers">链路分层</h2>
+              <span id="updatedAt" class="subtle"></span>
+            </div>
+            <div id="layers" class="layer-table"></div>
+          </article>
 
-      <article class="panel">
-        <div class="panel-head">
-          <h3 data-i18n="signalCategories">异常分类</h3>
-          <span class="muted">OpenClaw logs</span>
+          <article class="panel span-5">
+            <div class="panel-head">
+              <h2 data-i18n="signalCategories">异常分类</h2>
+              <span class="subtle">OpenClaw logs</span>
+            </div>
+            <canvas id="categoryChart" class="chart chart-bars"></canvas>
+          </article>
         </div>
-        <canvas id="categoryChart" class="chart chart-bars"></canvas>
-      </article>
-    </section>
+      </section>
 
-    <section id="events" class="grid">
-      <article class="panel wide">
-        <div class="panel-head">
-          <h3 data-i18n="eventTrend">事件趋势</h3>
-          <span class="muted" data-i18n="eventTrendHint">诊断与模型探针</span>
+      <section class="view" data-view="trends">
+        <div class="dashboard-grid">
+          <article class="panel span-12">
+            <div class="panel-head">
+              <h2 data-i18n="eventTrend">事件趋势</h2>
+              <span class="subtle" data-i18n="eventTrendHint">诊断与模型探针</span>
+            </div>
+            <canvas id="timelineChart" class="chart chart-timeline"></canvas>
+          </article>
+          <article class="panel span-6">
+            <div class="panel-head"><h2 data-i18n="modelSummary">模型探针</h2></div>
+            <div id="modelSummary" class="summary-list"></div>
+          </article>
+          <article class="panel span-6">
+            <div class="panel-head"><h2 data-i18n="restartSummary">重启统计</h2></div>
+            <div id="restartSummary" class="summary-list"></div>
+          </article>
         </div>
-        <canvas id="timelineChart" class="chart chart-timeline"></canvas>
-      </article>
+      </section>
 
-      <article id="strategy" class="panel">
-        <div class="panel-head">
-          <h3 data-i18n="quickStrategy">快速策略</h3>
-          <span id="actionState" class="pill">只读</span>
+      <section class="view" data-view="strategy">
+        <div class="dashboard-grid">
+          <article class="panel span-8">
+            <div class="panel-head">
+              <h2 data-i18n="quickStrategy">快速策略</h2>
+              <span id="actionState" class="pill">只读</span>
+            </div>
+            <button id="unlockBtn" class="wide-btn" data-i18n="unlock">解锁操作</button>
+            <div class="preset-grid">
+              <button data-preset="observe" data-tip-key="tipObserve">
+                <strong data-i18n="presetObserve">观察模式</strong>
+                <span data-i18n="tipObserve">只记录证据，不主动改变策略，适合先观察问题。</span>
+              </button>
+              <button data-preset="overnight" data-tip-key="tipOvernight">
+                <strong data-i18n="presetOvernight">夜间诊断</strong>
+                <span data-i18n="tipOvernight">开启轻量模型探针并保持 log-only，适合排查固定时段超时。</span>
+              </button>
+              <button data-preset="channel-recovery" data-tip-key="tipChannel">
+                <strong data-i18n="presetChannel">通道恢复</strong>
+                <span data-i18n="tipChannel">保持通道恢复敏感度，适合通道/session 经常断开的场景。</span>
+              </button>
+              <button data-preset="conservative" data-tip-key="tipConservative">
+                <strong data-i18n="presetConservative">保守熔断</strong>
+                <span data-i18n="tipConservative">提高阈值并降低重启频率，适合网络不稳定时防止重启风暴。</span>
+              </button>
+            </div>
+          </article>
+          <article class="panel span-4">
+            <div class="panel-head"><h2 data-i18n="manualActions">手动操作</h2></div>
+            <div class="action-stack">
+              <button id="diagBtn" data-i18n="runDiag">立即诊断</button>
+              <button id="restartBtn" class="danger" data-i18n="restartGateway">重启 Gateway</button>
+            </div>
+          </article>
         </div>
-        <button id="unlockBtn" class="wide-btn" data-i18n="unlock">解锁操作</button>
-        <div class="preset-grid">
-          <button data-preset="observe" data-tip-key="tipObserve" data-i18n="presetObserve">观察模式</button>
-          <button data-preset="overnight" data-tip-key="tipOvernight" data-i18n="presetOvernight">夜间诊断</button>
-          <button data-preset="channel-recovery" data-tip-key="tipChannel" data-i18n="presetChannel">通道恢复</button>
-          <button data-preset="conservative" data-tip-key="tipConservative" data-i18n="presetConservative">保守熔断</button>
-        </div>
-        <p id="strategyTip" class="hint" data-i18n="strategyTip">悬停策略按钮查看说明。</p>
-        <div class="danger-row">
-          <button id="diagBtn" data-i18n="runDiag">立即诊断</button>
-          <button id="restartBtn" class="danger" data-i18n="restartGateway">重启 Gateway</button>
-        </div>
-      </article>
-    </section>
+      </section>
 
-    <section class="grid">
-      <article class="panel">
-        <div class="panel-head">
-          <h3 data-i18n="configSummary">配置摘要</h3>
-          <span class="muted" data-i18n="sensitiveMasked">敏感项已遮盖</span>
-        </div>
-        <dl id="configList" class="config-list"></dl>
-      </article>
+      <section class="view" data-view="logs">
+        <article class="panel">
+          <div class="panel-head">
+            <h2 data-i18n="recentLogs">最近日志</h2>
+            <label class="toggle"><input id="followLog" type="checkbox" checked><span data-i18n="followLatest">保持最新</span></label>
+          </div>
+          <pre id="logTail" class="log"></pre>
+        </article>
+      </section>
 
-      <article class="panel">
-        <div class="panel-head">
-          <h3 data-i18n="stateFiles">状态文件</h3>
-          <span class="muted">mtime</span>
+      <section class="view" data-view="settings">
+        <div class="dashboard-grid">
+          <article class="panel span-6">
+            <div class="panel-head">
+              <h2 data-i18n="configSummary">配置摘要</h2>
+              <span class="subtle" data-i18n="sensitiveMasked">敏感项已遮盖</span>
+            </div>
+            <dl id="configList" class="config-list"></dl>
+          </article>
+          <article class="panel span-6">
+            <div class="panel-head">
+              <h2 data-i18n="stateFiles">状态文件</h2>
+              <span class="subtle">mtime</span>
+            </div>
+            <div id="fileList" class="file-list"></div>
+          </article>
         </div>
-        <div id="fileList" class="file-list"></div>
-      </article>
-    </section>
-
-    <section id="logs" class="panel">
-      <div class="panel-head">
-        <h3 data-i18n="recentLogs">最近日志</h3>
-        <label class="toggle"><input id="followLog" type="checkbox" checked><span data-i18n="followLatest">保持最新</span></label>
-      </div>
-      <pre id="logTail" class="log"></pre>
-    </section>
-  </main>
+      </section>
+    </main>
   </div>
 
   <div id="toast" class="toast" hidden></div>

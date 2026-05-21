@@ -1,14 +1,20 @@
 const $ = (id) => document.getElementById(id);
 
+const ROUTES = ["overview", "trends", "strategy", "logs", "settings"];
+
 const DICT = {
   zh: {
     brandSub: "OpenClaw 看门狗",
     navOverview: "总览",
-    navEvents: "趋势",
+    navTrends: "趋势",
     navStrategy: "策略",
     navLogs: "日志",
-    sideNote: "独立运行在 localhost，Gateway 挂了也能打开。",
-    pageTitle: "恢复控制台",
+    navSettings: "配置",
+    titleOverview: "恢复控制台",
+    titleTrends: "趋势分析",
+    titleStrategy: "策略控制",
+    titleLogs: "日志审计",
+    titleSettings: "配置状态",
     export: "导出诊断",
     currentDecision: "当前判断",
     recentRestarts: "近期重启",
@@ -19,14 +25,16 @@ const DICT = {
     signalCategories: "异常分类",
     eventTrend: "事件趋势",
     eventTrendHint: "诊断与模型探针",
+    modelSummary: "模型探针",
+    restartSummary: "重启统计",
     quickStrategy: "快速策略",
+    manualActions: "手动操作",
     unlock: "解锁操作",
     lock: "锁定操作",
     presetObserve: "观察模式",
     presetOvernight: "夜间诊断",
     presetChannel: "通道恢复",
     presetConservative: "保守熔断",
-    strategyTip: "悬停策略按钮查看说明。",
     tipObserve: "只记录证据，不主动改变策略，适合先观察问题。",
     tipOvernight: "开启轻量模型探针并保持 log-only，适合排查固定时段超时。",
     tipChannel: "保持通道恢复敏感度，适合通道/session 经常断开的场景。",
@@ -55,20 +63,31 @@ const DICT = {
     tokenCleared: "已清除本地 token。",
     clearConfirm: "要清除当前浏览器保存的操作 token 吗？",
     statusUnknown: "正在汇总 watchdog 状态。",
-    xAxis: "时间",
     apiFail: "API失败",
     logWarn: "日志WARN",
     modelOkLegend: "模型OK",
     diagOk: "诊断OK",
+    lastProbe: "最近探针",
+    successRate: "成功比例",
+    latestReason: "最新原因",
+    noModelHistory: "暂无模型探针记录",
+    restartWindow: "统计窗口",
+    lastRestart: "最近重启",
+    restartPolicy: "重启策略",
+    notAvailable: "暂无",
   },
   en: {
     brandSub: "OpenClaw Watchdog",
     navOverview: "Overview",
-    navEvents: "Trends",
+    navTrends: "Trends",
     navStrategy: "Strategy",
     navLogs: "Logs",
-    sideNote: "Runs on localhost and stays reachable when Gateway is down.",
-    pageTitle: "Recovery Console",
+    navSettings: "Config",
+    titleOverview: "Recovery Console",
+    titleTrends: "Trend Analysis",
+    titleStrategy: "Strategy Control",
+    titleLogs: "Log Audit",
+    titleSettings: "Config State",
     export: "Export Diagnostics",
     currentDecision: "Current Decision",
     recentRestarts: "Recent Restarts",
@@ -79,14 +98,16 @@ const DICT = {
     signalCategories: "Signal Categories",
     eventTrend: "Event Trend",
     eventTrendHint: "Diagnostics and model probes",
+    modelSummary: "Model Probe",
+    restartSummary: "Restart Summary",
     quickStrategy: "Quick Strategy",
+    manualActions: "Manual Actions",
     unlock: "Unlock Actions",
     lock: "Lock Actions",
     presetObserve: "Observe",
     presetOvernight: "Overnight Diagnosis",
     presetChannel: "Channel Recovery",
     presetConservative: "Conservative Breaker",
-    strategyTip: "Hover a strategy button to see what it changes.",
     tipObserve: "Record evidence only. Best when you want to observe first.",
     tipOvernight: "Enable lightweight model probes with log-only actions for fixed-hour timeouts.",
     tipChannel: "Keep channel recovery responsive for session or channel disconnects.",
@@ -115,16 +136,24 @@ const DICT = {
     tokenCleared: "Local token cleared.",
     clearConfirm: "Clear the action token saved in this browser?",
     statusUnknown: "Collecting watchdog status.",
-    xAxis: "Time",
     apiFail: "API failed",
     logWarn: "Log WARN",
     modelOkLegend: "Model OK",
     diagOk: "Diag OK",
+    lastProbe: "Last probe",
+    successRate: "Success rate",
+    latestReason: "Latest reason",
+    noModelHistory: "No model probe history",
+    restartWindow: "Window",
+    lastRestart: "Last restart",
+    restartPolicy: "Restart policy",
+    notAvailable: "n/a",
   },
 };
 
 let lang = localStorage.getItem("watchdog.lang") || "zh";
 let theme = localStorage.getItem("watchdog.theme") || "light";
+let activeRoute = localStorage.getItem("watchdog.route") || "overview";
 let actionToken = localStorage.getItem("watchdog.actionToken") || window.WATCHDOG_ACTION_TOKEN || "";
 let lastStatus = null;
 
@@ -141,11 +170,26 @@ function applyLocale() {
   document.querySelectorAll("[data-tip-key]").forEach((node) => {
     node.title = t(node.dataset.tipKey);
   });
+  setRoute(activeRoute, { preserveScroll: true });
 }
 
 function applyTheme() {
   document.documentElement.dataset.theme = theme;
   $("themeSelect").value = theme;
+}
+
+function setRoute(route, options = {}) {
+  activeRoute = ROUTES.includes(route) ? route : "overview";
+  localStorage.setItem("watchdog.route", activeRoute);
+  document.querySelectorAll("[data-route]").forEach((node) => {
+    node.classList.toggle("active", node.dataset.route === activeRoute);
+  });
+  document.querySelectorAll("[data-view]").forEach((node) => {
+    node.classList.toggle("active", node.dataset.view === activeRoute);
+  });
+  $("pageTitle").textContent = t(`title${activeRoute[0].toUpperCase()}${activeRoute.slice(1)}`);
+  if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: "auto" });
+  if (lastStatus) renderCharts(lastStatus);
 }
 
 function toast(message) {
@@ -161,6 +205,13 @@ function fmtAge(seconds) {
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
   return `${Math.round(seconds / 3600)}h`;
+}
+
+function fmtDate(value) {
+  if (!value) return t("notAvailable");
+  const ts = typeof value === "number" ? value : Date.parse(value);
+  if (!Number.isFinite(ts)) return String(value);
+  return new Date(ts).toLocaleString(lang === "zh" ? "zh-CN" : "en-US");
 }
 
 function statusClass(status) {
@@ -192,7 +243,8 @@ async function postJson(url, body = {}) {
 
 function prepareCanvas(canvas, fallbackHeight) {
   const rect = canvas.getBoundingClientRect();
-  const width = Math.max(320, Math.floor(rect.width || canvas.clientWidth || 480));
+  if (rect.width < 10 || rect.height < 10) return null;
+  const width = Math.floor(rect.width);
   const cssHeight = Math.max(140, Math.floor(rect.height || fallbackHeight));
   const ratio = window.devicePixelRatio || 1;
   canvas.width = Math.floor(width * ratio);
@@ -208,7 +260,9 @@ function cssVar(name) {
 }
 
 function drawBars(canvas, data) {
-  const { ctx, width, height } = prepareCanvas(canvas, 206);
+  const prepared = prepareCanvas(canvas, 220);
+  if (!prepared) return;
+  const { ctx, width, height } = prepared;
   const entries = Object.entries(data || {}).slice(0, 8);
   ctx.font = "12px ui-monospace, Consolas, monospace";
   if (!entries.length) {
@@ -224,7 +278,7 @@ function drawBars(canvas, data) {
     const y = 20 + index * rowHeight;
     const barWidth = Math.max(4, (width - labelWidth - 48) * (value / max));
     ctx.fillStyle = cssVar("--muted");
-    ctx.fillText(name.length > 18 ? `${name.slice(0, 17)}…` : name, 12, y);
+    ctx.fillText(name.length > 18 ? `${name.slice(0, 17)}...` : name, 12, y);
     ctx.fillStyle = colors[index % colors.length];
     ctx.fillRect(labelWidth, y - 11, barWidth, 12);
     ctx.fillStyle = cssVar("--ink");
@@ -237,31 +291,35 @@ function formatTick(ts) {
 }
 
 function drawTimeline(canvas, diagnostics, modelHistory) {
-  const { ctx, width, height } = prepareCanvas(canvas, 224);
+  const prepared = prepareCanvas(canvas, 300);
+  if (!prepared) return;
+  const { ctx, width, height } = prepared;
   const points = [];
   for (const item of diagnostics || []) points.push({ ts: Date.parse(item.ts), kind: item.newLogSignals ? "warn" : "ok" });
   for (const item of modelHistory || []) points.push({ ts: Date.parse(item.ts), kind: item.status === "fail" ? "fail" : "model-ok" });
-  const valid = points.filter((p) => Number.isFinite(p.ts)).sort((a, b) => a.ts - b.ts).slice(-160);
-  const left = 92, right = width - 18, top = 24, axisY = height - 34;
+  const valid = points.filter((p) => Number.isFinite(p.ts)).sort((a, b) => a.ts - b.ts).slice(-180);
+  const left = 104;
+  const right = width - 28;
+  const top = 32;
+  const axisY = height - 42;
   ctx.font = "12px system-ui";
   ctx.strokeStyle = cssVar("--line");
-  ctx.fillStyle = cssVar("--muted");
   ctx.beginPath();
   ctx.moveTo(left, axisY);
   ctx.lineTo(right, axisY);
   ctx.stroke();
-  ctx.fillText(t("xAxis"), right - 28, axisY + 22);
   if (!valid.length) {
+    ctx.fillStyle = cssVar("--muted");
     ctx.fillText(t("noTimeline"), left, top + 28);
     return;
   }
   const min = valid[0].ts;
   const max = valid[valid.length - 1].ts || min + 1;
   const lanes = [
-    ["fail", t("apiFail"), cssVar("--red"), top + 18],
-    ["warn", t("logWarn"), cssVar("--amber"), top + 58],
-    ["model-ok", t("modelOkLegend"), cssVar("--accent"), top + 98],
-    ["ok", t("diagOk"), cssVar("--green"), top + 138],
+    ["fail", t("apiFail"), cssVar("--red"), top + 20],
+    ["warn", t("logWarn"), cssVar("--amber"), top + 70],
+    ["model-ok", t("modelOkLegend"), cssVar("--accent"), top + 120],
+    ["ok", t("diagOk"), cssVar("--green"), top + 170],
   ];
   for (const [, label, color, y] of lanes) {
     ctx.fillStyle = color;
@@ -269,7 +327,7 @@ function drawTimeline(canvas, diagnostics, modelHistory) {
     ctx.arc(18, y - 4, 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = cssVar("--muted");
-    ctx.fillText(label, 30, y);
+    ctx.fillText(label, 32, y);
     ctx.strokeStyle = cssVar("--line");
     ctx.beginPath();
     ctx.moveTo(left, y - 4);
@@ -290,7 +348,8 @@ function drawTimeline(canvas, diagnostics, modelHistory) {
   ticks.forEach((tick, i) => {
     const x = left + ((tick - min) / Math.max(1, max - min)) * (right - left);
     const label = formatTick(tick);
-    ctx.fillText(label, i === 2 ? x - 38 : x - 12, axisY + 18);
+    const offset = i === 2 ? -44 : i === 1 ? -22 : -8;
+    ctx.fillText(label, x + offset, axisY + 22);
   });
 }
 
@@ -307,10 +366,37 @@ function renderLayers(data) {
   $("layers").innerHTML = layers.map(([name, meta, state]) => `
     <div class="layer">
       <span class="spark ${state}"></span>
-      <div><strong>${name}</strong><span class="muted" title="${meta?.path || ""}">${meta?.path || "runtime snapshot"}</span></div>
-      <span class="muted">${meta?.exists ? fmtAge(meta.ageSeconds) : t("missing")}</span>
+      <div><strong>${name}</strong><span class="subtle" title="${meta?.path || ""}">${meta?.path || "runtime snapshot"}</span></div>
+      <span class="subtle">${meta?.exists ? fmtAge(meta.ageSeconds) : t("missing")}</span>
     </div>
   `).join("");
+}
+
+function renderSummaryList(id, rows) {
+  $(id).innerHTML = rows.map(([label, value]) => `
+    <div class="summary-row">
+      <span class="subtle">${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `).join("");
+}
+
+function renderTrendSummaries(data) {
+  const history = data.modelHistory || [];
+  const latest = history[history.length - 1];
+  const modelTotal = (data.summary.modelOk || 0) + (data.summary.modelFailures || 0);
+  const successRate = modelTotal ? `${Math.round(((data.summary.modelOk || 0) / modelTotal) * 100)}%` : t("notAvailable");
+  renderSummaryList("modelSummary", [
+    [t("lastProbe"), latest ? fmtDate(latest.ts) : t("noModelHistory")],
+    [t("successRate"), successRate],
+    [t("latestReason"), latest?.reason || latest?.status || t("notAvailable")],
+  ]);
+  const cfg = data.config || {};
+  renderSummaryList("restartSummary", [
+    [t("restartWindow"), "24h"],
+    [t("recentRestarts"), data.summary.recentRestarts ?? 0],
+    [t("restartPolicy"), cfg.OPENCLAW_DIAG_ACTION || cfg.OpenClawDiagAction || t("notAvailable")],
+  ]);
 }
 
 function renderConfig(config) {
@@ -328,7 +414,7 @@ function renderFiles(files) {
   $("fileList").innerHTML = Object.entries(files || {}).map(([name, meta]) => `
     <div class="file-row">
       <strong>${name}</strong>
-      <span class="muted">${meta.exists ? `${fmtAge(meta.ageSeconds)} · ${Math.round((meta.size || 0) / 1024)}KB` : t("missing")}</span>
+      <span class="subtle">${meta.exists ? `${fmtAge(meta.ageSeconds)} / ${Math.round((meta.size || 0) / 1024)}KB` : t("missing")}</span>
     </div>
   `).join("");
 }
@@ -343,6 +429,11 @@ function updateActionUi(data) {
   document.querySelectorAll("[data-preset], #diagBtn, #restartBtn").forEach((node) => { node.disabled = disabled; });
 }
 
+function renderCharts(data) {
+  if (activeRoute === "overview") drawBars($("categoryChart"), data.categories || {});
+  if (activeRoute === "trends") drawTimeline($("timelineChart"), data.diagnostics || [], data.modelHistory || []);
+}
+
 function render(data) {
   lastStatus = data;
   const status = data.summary.status || "unknown";
@@ -353,17 +444,17 @@ function render(data) {
   $("categoryCount").textContent = data.summary.categoryCount ?? 0;
   $("modelOk").textContent = data.summary.modelOk ?? 0;
   $("modelFail").textContent = data.summary.modelFailures ?? 0;
-  $("updatedAt").textContent = new Date(data.generatedAt).toLocaleString(lang === "zh" ? "zh-CN" : "en-US");
+  $("updatedAt").textContent = fmtDate(data.generatedAt);
   updateActionUi(data);
   renderLayers(data);
+  renderTrendSummaries(data);
   renderConfig(data.config || {});
   renderFiles(data.files || {});
   const log = $("logTail");
   const shouldFollow = $("followLog").checked;
   log.textContent = (data.logTail || []).join("\n") || "No logs yet.";
   if (shouldFollow) log.scrollTop = log.scrollHeight;
-  drawBars($("categoryChart"), data.categories || {});
-  drawTimeline($("timelineChart"), data.diagnostics || [], data.modelHistory || []);
+  renderCharts(data);
 }
 
 async function refresh() {
@@ -378,6 +469,10 @@ function saveSettings() {
   localStorage.setItem("watchdog.lang", lang);
   localStorage.setItem("watchdog.theme", theme);
 }
+
+document.querySelectorAll("[data-route]").forEach((button) => {
+  button.addEventListener("click", () => setRoute(button.dataset.route));
+});
 
 $("langSelect").addEventListener("change", () => {
   lang = $("langSelect").value;
@@ -447,18 +542,19 @@ $("restartBtn").addEventListener("click", async () => {
 });
 
 document.querySelectorAll("[data-preset]").forEach((button) => {
-  button.addEventListener("mouseenter", () => { $("strategyTip").textContent = t(button.dataset.tipKey); });
-  button.addEventListener("focus", () => { $("strategyTip").textContent = t(button.dataset.tipKey); });
-  button.addEventListener("mouseleave", () => { $("strategyTip").textContent = t("strategyTip"); });
   button.addEventListener("click", async () => {
     try {
       await postJson("/api/config/preset", { preset: button.dataset.preset });
       await refresh();
-      toast(`${t("presetDone")}: ${button.textContent}`);
+      toast(`${t("presetDone")}: ${button.querySelector("strong")?.textContent || button.textContent}`);
     } catch (err) {
       toast(err.message);
     }
   });
+});
+
+window.addEventListener("resize", () => {
+  if (lastStatus) renderCharts(lastStatus);
 });
 
 applyTheme();

@@ -1,6 +1,6 @@
 {
   "name": "@zc-kama/openclaw-resilience-guard",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "type": "module",
   "description": "OpenClaw plugin bridge for the external Gateway Resilience Guard dashboard.",
   "license": "MIT-0",

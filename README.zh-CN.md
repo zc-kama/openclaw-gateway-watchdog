@@ -106,7 +106,8 @@ http://127.0.0.1:18790/
 
 - Gateway、通道、外部网络、OpenClaw 日志、模型 provider 的分层状态。
 - provider timeout、代理/网络、限流、鉴权、通道 session、Gateway degraded、配置热加载、任务运行时异常的分类图表。
-- 事件趋势图，把 API 失败、日志 WARN、模型探针成功、健康诊断分成不同泳道，并显示时间轴刻度。
+- 侧边栏分页：总览、趋势、策略、日志、配置分开呈现，避免把监控、操作和明细堆在一个长页面里。
+- 事件趋势图，把 API 失败、日志 WARN、模型探针成功、健康诊断分成不同泳道，并保留清晰的时间刻度。
 - 中英文语言切换，以及 Light、Dark、Ocean、Forest 四套主题。
 - 状态文件新鲜度，避免把过期快照误认为当前状态。
 - 快速策略按钮：观察模式、夜间诊断、通道恢复、保守熔断。
@@ -349,8 +350,8 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.4.1 \
-  --changelog "Polish dashboard layout, language, themes, charts, logs, and guarded action unlock"
+  --version 1.4.2 \
+  --changelog "Redesign dashboard navigation, alignment, trend chart axis, strategy controls, and visual system"
 ```
 
 发布前需要先执行 `clawhub login` 完成 CLI 登录。
