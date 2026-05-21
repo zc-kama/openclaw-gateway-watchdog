@@ -243,7 +243,7 @@ def build_status() -> dict:
     latest_model = model_history[-1] if model_history else {}
     return {
         "generatedAt": now_ms(),
-        "version": "1.4.2",
+        "version": "1.4.3",
         "stateDir": str(STATE_DIR),
         "configFile": str(CONFIG_FILE),
         "dashboard": {
@@ -394,7 +394,7 @@ def run_diagnostics() -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "OpenClawWatchdogDashboard/1.4.2"
+    server_version = "OpenClawWatchdogDashboard/1.4.3"
 
     def log_message(self, fmt: str, *args) -> None:
         line = "[%s] %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), fmt % args)
@@ -445,6 +445,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/styles.css":
             self.send_static(STATIC / "styles.css", "text/css; charset=utf-8")
+            return
+        if path == "/vendor/fluent-register.js":
+            self.send_static(STATIC / "vendor" / "fluent-register.js", "text/javascript; charset=utf-8")
+            return
+        if path == "/vendor/fluent-web-components.min.js":
+            self.send_static(STATIC / "vendor" / "fluent-web-components.min.js", "text/javascript; charset=utf-8")
             return
         self.send_error(HTTPStatus.NOT_FOUND)
 

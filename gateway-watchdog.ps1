@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
-$Version = "1.4.2"
+$Version = "1.4.3"
 
 $ConfigDir = Join-Path $env:APPDATA "openclaw-gateway-watchdog"
 $StateDir = Join-Path $env:LOCALAPPDATA "openclaw-gateway-watchdog"

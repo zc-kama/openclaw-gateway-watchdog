@@ -4,7 +4,7 @@
 
 set -u
 
-WATCHDOG_VERSION="1.4.2"
+WATCHDOG_VERSION="1.4.3"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
 CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/openclaw-gateway-watchdog"

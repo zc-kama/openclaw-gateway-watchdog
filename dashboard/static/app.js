@@ -15,6 +15,11 @@ const DICT = {
     titleStrategy: "策略控制",
     titleLogs: "日志审计",
     titleSettings: "配置状态",
+    subtitleOverview: "把 Gateway、通道、日志和模型探针合成一个恢复判断。",
+    subtitleTrends: "观察夜间超时、provider 异常和通道恢复是否在同一时间聚集。",
+    subtitleStrategy: "选择处置姿态，并把高风险动作放进解锁流程。",
+    subtitleLogs: "查看 watchdog 与 OpenClaw 信号，快速定位最近一次断链。",
+    subtitleSettings: "确认运行路径、状态文件新鲜度和当前策略配置。",
     export: "导出诊断",
     currentDecision: "当前判断",
     recentRestarts: "近期重启",
@@ -22,13 +27,22 @@ const DICT = {
     modelOk: "模型成功",
     modelFail: "模型失败",
     layers: "链路分层",
+    layersHint: "按恢复路径从 Gateway 到模型 provider 排列。",
     signalCategories: "异常分类",
+    signalHint: "用于判断是代理、provider 还是通道层问题。",
     eventTrend: "事件趋势",
-    eventTrendHint: "诊断与模型探针",
+    eventTrendHint: "诊断、日志告警和模型探针的同屏时间线。",
+    trendDigest: "趋势摘要",
+    trendDigestHint: "把散点变成可读结论。",
     modelSummary: "模型探针",
     restartSummary: "重启统计",
+    latestSignals: "最新信号",
+    actionCenter: "处置入口",
     quickStrategy: "快速策略",
+    strategyHint: "选择故障处理姿态，所有写入动作都需要先解锁。",
+    strategyMatrix: "策略矩阵",
     manualActions: "手动操作",
+    manualHint: "高风险动作集中放在这里。",
     unlock: "解锁操作",
     lock: "锁定操作",
     presetObserve: "观察模式",
@@ -45,7 +59,9 @@ const DICT = {
     sensitiveMasked: "敏感项已遮盖",
     stateFiles: "状态文件",
     recentLogs: "最近日志",
+    logHint: "默认跟随最新行，适合观察夜间超时。",
     followLatest: "保持最新",
+    runtimeMap: "运行地图",
     locked: "只读",
     actionReady: "可执行",
     unlocked: "已解锁",
@@ -62,6 +78,7 @@ const DICT = {
     tokenSaved: "操作 token 已保存到当前浏览器。",
     tokenCleared: "已清除本地 token。",
     clearConfirm: "要清除当前浏览器保存的操作 token 吗？",
+    unlockFirst: "请先解锁操作。",
     statusUnknown: "正在汇总 watchdog 状态。",
     apiFail: "API失败",
     logWarn: "日志WARN",
@@ -74,6 +91,15 @@ const DICT = {
     restartWindow: "统计窗口",
     lastRestart: "最近重启",
     restartPolicy: "重启策略",
+    stateDirectory: "状态目录",
+    configFile: "配置文件",
+    dashboardPort: "Dashboard 端口",
+    dashboardAction: "写入动作",
+    dominantSignal: "主要信号",
+    evidenceCount: "证据数量",
+    noRecentSignals: "暂无信号",
+    enabled: "开启",
+    disabled: "关闭",
     notAvailable: "暂无",
   },
   en: {
@@ -88,6 +114,11 @@ const DICT = {
     titleStrategy: "Strategy Control",
     titleLogs: "Log Audit",
     titleSettings: "Config State",
+    subtitleOverview: "Merge Gateway, channel, log, and model-probe evidence into one recovery decision.",
+    subtitleTrends: "Watch whether fixed-hour timeouts, provider errors, and channel recovery cluster together.",
+    subtitleStrategy: "Choose a response posture and keep risky actions behind an unlock flow.",
+    subtitleLogs: "Audit watchdog and OpenClaw signals to locate the latest disconnect.",
+    subtitleSettings: "Confirm runtime paths, state freshness, and active strategy config.",
     export: "Export Diagnostics",
     currentDecision: "Current Decision",
     recentRestarts: "Recent Restarts",
@@ -95,13 +126,22 @@ const DICT = {
     modelOk: "Model OK",
     modelFail: "Model Failed",
     layers: "Health Layers",
+    layersHint: "Ordered by the recovery path from Gateway to model provider.",
     signalCategories: "Signal Categories",
+    signalHint: "Helps separate proxy, provider, and channel failures.",
     eventTrend: "Event Trend",
-    eventTrendHint: "Diagnostics and model probes",
+    eventTrendHint: "Diagnostics, log warnings, and model probes in one timeline.",
+    trendDigest: "Trend Digest",
+    trendDigestHint: "Turns scattered points into readable conclusions.",
     modelSummary: "Model Probe",
     restartSummary: "Restart Summary",
+    latestSignals: "Latest Signals",
+    actionCenter: "Action Center",
     quickStrategy: "Quick Strategy",
+    strategyHint: "Choose the response posture. Writes require unlock.",
+    strategyMatrix: "Strategy Matrix",
     manualActions: "Manual Actions",
+    manualHint: "High-risk actions live here.",
     unlock: "Unlock Actions",
     lock: "Lock Actions",
     presetObserve: "Observe",
@@ -118,7 +158,9 @@ const DICT = {
     sensitiveMasked: "Sensitive values are masked",
     stateFiles: "State Files",
     recentLogs: "Recent Logs",
+    logHint: "Follows the newest lines by default for overnight timeout checks.",
     followLatest: "Follow latest",
+    runtimeMap: "Runtime Map",
     locked: "Read-only",
     actionReady: "Action ready",
     unlocked: "Unlocked",
@@ -135,6 +177,7 @@ const DICT = {
     tokenSaved: "Action token saved in this browser.",
     tokenCleared: "Local token cleared.",
     clearConfirm: "Clear the action token saved in this browser?",
+    unlockFirst: "Unlock actions first.",
     statusUnknown: "Collecting watchdog status.",
     apiFail: "API failed",
     logWarn: "Log WARN",
@@ -147,15 +190,28 @@ const DICT = {
     restartWindow: "Window",
     lastRestart: "Last restart",
     restartPolicy: "Restart policy",
+    stateDirectory: "State directory",
+    configFile: "Config file",
+    dashboardPort: "Dashboard port",
+    dashboardAction: "Write actions",
+    dominantSignal: "Dominant signal",
+    evidenceCount: "Evidence count",
+    noRecentSignals: "No recent signals",
+    enabled: "enabled",
+    disabled: "disabled",
     notAvailable: "n/a",
   },
 };
 
 let lang = localStorage.getItem("watchdog.lang") || "zh";
-let theme = localStorage.getItem("watchdog.theme") || "light";
+let theme = localStorage.getItem("watchdog.theme") || "obsidian";
 let activeRoute = localStorage.getItem("watchdog.route") || "overview";
 let actionToken = localStorage.getItem("watchdog.actionToken") || window.WATCHDOG_ACTION_TOKEN || "";
 let lastStatus = null;
+
+if (!["obsidian", "daylight", "aurora", "graphite"].includes(theme)) {
+  theme = "obsidian";
+}
 
 function t(key) {
   return DICT[lang]?.[key] || DICT.zh[key] || key;
@@ -163,7 +219,7 @@ function t(key) {
 
 function applyLocale() {
   document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
-  $("langSelect").value = lang;
+  setControlValue($("langSelect"), lang);
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     node.textContent = t(node.dataset.i18n);
   });
@@ -175,7 +231,13 @@ function applyLocale() {
 
 function applyTheme() {
   document.documentElement.dataset.theme = theme;
-  $("themeSelect").value = theme;
+  setControlValue($("themeSelect"), theme);
+}
+
+function setControlValue(node, value) {
+  if (!node) return;
+  node.value = value;
+  node.setAttribute("value", value);
 }
 
 function setRoute(route, options = {}) {
@@ -188,6 +250,7 @@ function setRoute(route, options = {}) {
     node.classList.toggle("active", node.dataset.view === activeRoute);
   });
   $("pageTitle").textContent = t(`title${activeRoute[0].toUpperCase()}${activeRoute.slice(1)}`);
+  $("pageSubtitle").textContent = t(`subtitle${activeRoute[0].toUpperCase()}${activeRoute.slice(1)}`);
   if (!options.preserveScroll) window.scrollTo({ top: 0, behavior: "auto" });
   if (lastStatus) renderCharts(lastStatus);
 }
@@ -373,8 +436,22 @@ function renderLayers(data) {
 }
 
 function renderSummaryList(id, rows) {
-  $(id).innerHTML = rows.map(([label, value]) => `
+  const node = $(id);
+  if (!node) return;
+  node.innerHTML = rows.map(([label, value]) => `
     <div class="summary-row">
+      <span class="subtle">${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `).join("");
+}
+
+function renderMiniList(id, rows) {
+  const node = $(id);
+  if (!node) return;
+  const safeRows = rows.length ? rows : [[t("noRecentSignals"), t("notAvailable")]];
+  node.innerHTML = safeRows.map(([label, value]) => `
+    <div class="mini-row">
       <span class="subtle">${label}</span>
       <strong>${value}</strong>
     </div>
@@ -386,17 +463,80 @@ function renderTrendSummaries(data) {
   const latest = history[history.length - 1];
   const modelTotal = (data.summary.modelOk || 0) + (data.summary.modelFailures || 0);
   const successRate = modelTotal ? `${Math.round(((data.summary.modelOk || 0) / modelTotal) * 100)}%` : t("notAvailable");
-  renderSummaryList("modelSummary", [
+  const modelRows = [
     [t("lastProbe"), latest ? fmtDate(latest.ts) : t("noModelHistory")],
     [t("successRate"), successRate],
     [t("latestReason"), latest?.reason || latest?.status || t("notAvailable")],
-  ]);
+  ];
   const cfg = data.config || {};
-  renderSummaryList("restartSummary", [
+  const restartRows = [
     [t("restartWindow"), "24h"],
     [t("recentRestarts"), data.summary.recentRestarts ?? 0],
     [t("restartPolicy"), cfg.OPENCLAW_DIAG_ACTION || cfg.OpenClawDiagAction || t("notAvailable")],
+  ];
+  renderSummaryList("modelSummary", modelRows);
+  renderSummaryList("overviewModelSummary", modelRows);
+  renderSummaryList("restartSummary", restartRows);
+  renderSummaryList("overviewRestartSummary", restartRows);
+  const categories = Object.entries(data.categories || {}).sort((a, b) => b[1] - a[1]);
+  renderMiniList("categoryTopList", categories.slice(0, 4));
+  renderMiniList("latestSignals", categories.slice(0, 5));
+  renderMiniList("logSignalList", categories.slice(0, 10));
+  const dominant = categories[0]?.[0] || t("notAvailable");
+  const evidenceCount = (data.diagnostics || []).length + (data.modelHistory || []).length;
+  renderMiniList("trendDigest", [
+    [t("dominantSignal"), dominant],
+    [t("evidenceCount"), evidenceCount],
+    [t("modelFail"), data.summary.modelFailures ?? 0],
+    [t("recentRestarts"), data.summary.recentRestarts ?? 0],
   ]);
+  renderStrategyConfig(data);
+  renderStrategyMatrix();
+  renderRuntimeMap(data);
+}
+
+function renderStrategyConfig(data) {
+  const cfg = data.config || {};
+  renderSummaryList("strategyConfigSummary", [
+    ["MODEL_PROBE", cfg.MODEL_PROBE_ENABLED === "1" || cfg.ModelProbeEnabled === true ? t("enabled") : t("disabled")],
+    ["OPENCLAW_DIAG_ACTION", cfg.OPENCLAW_DIAG_ACTION || cfg.OpenClawDiagAction || t("notAvailable")],
+    ["MAX_RESTARTS_PER_HOUR", cfg.MAX_RESTARTS_PER_HOUR || cfg.MaxRestartsPerHour || t("notAvailable")],
+    [t("dashboardAction"), data.dashboard?.actionsEnabled ? t("enabled") : t("disabled")],
+  ]);
+}
+
+function renderStrategyMatrix() {
+  const rows = [
+    [t("presetObserve"), t("tipObserve")],
+    [t("presetOvernight"), t("tipOvernight")],
+    [t("presetChannel"), t("tipChannel")],
+    [t("presetConservative"), t("tipConservative")],
+  ];
+  const node = $("strategyMatrix");
+  if (!node) return;
+  node.innerHTML = rows.map(([title, detail]) => `
+    <div class="matrix-cell">
+      <strong>${title}</strong>
+      <span>${detail}</span>
+    </div>
+  `).join("");
+}
+
+function renderRuntimeMap(data) {
+  const node = $("runtimeMap");
+  if (!node) return;
+  const rows = [
+    [t("stateDirectory"), data.stateDir || t("notAvailable")],
+    [t("configFile"), data.configFile || t("notAvailable")],
+    [t("dashboardPort"), data.dashboard?.port || t("notAvailable")],
+    [t("dashboardAction"), data.dashboard?.actionsEnabled ? t("enabled") : t("disabled")],
+  ];
+  node.innerHTML = rows.map(([title, detail]) => `
+    <div class="runtime-cell">
+      <strong>${title}</strong>
+      <span>${detail}</span>
+    </div>
+  `).join("");
 }
 
 function renderConfig(config) {
@@ -422,11 +562,31 @@ function renderFiles(files) {
 function updateActionUi(data) {
   const serverReady = Boolean(data.dashboard?.actionsEnabled);
   const unlocked = Boolean(actionToken);
-  $("actionState").textContent = serverReady ? (unlocked ? t("unlocked") : t("actionReady")) : t("locked");
-  $("actionState").className = serverReady ? (unlocked ? "pill unlocked" : "pill enabled") : "pill";
-  $("unlockBtn").textContent = unlocked ? t("lock") : t("unlock");
+  const label = serverReady ? (unlocked ? t("unlocked") : t("actionReady")) : t("locked");
+  const className = serverReady ? (unlocked ? "status-chip unlocked" : "status-chip enabled") : "status-chip";
+  for (const id of ["actionState", "strategyActionState"]) {
+    const node = $(id);
+    if (!node) continue;
+    node.textContent = label;
+    node.className = className;
+  }
+  for (const id of ["unlockBtn", "strategyUnlockBtn"]) {
+    const node = $(id);
+    if (node) node.textContent = unlocked ? t("lock") : t("unlock");
+  }
   const disabled = !serverReady || !unlocked;
-  document.querySelectorAll("[data-preset], #diagBtn, #restartBtn").forEach((node) => { node.disabled = disabled; });
+  document.querySelectorAll("[data-preset], #diagBtn, #restartBtn, #heroDiagBtn, #heroRestartBtn").forEach((node) => {
+    node.classList.toggle("guarded-disabled", disabled);
+    node.setAttribute("aria-disabled", String(disabled));
+  });
+}
+
+function canRunActions() {
+  if (!lastStatus?.dashboard?.actionsEnabled || !actionToken) {
+    toast(t("unlockFirst"));
+    return false;
+  }
+  return true;
 }
 
 function renderCharts(data) {
@@ -437,7 +597,9 @@ function renderCharts(data) {
 function render(data) {
   lastStatus = data;
   const status = data.summary.status || "unknown";
-  $("mainStatus").className = `status-dot ${statusClass(status)}`;
+  $("mainStatus").className = `status-orb ${statusClass(status)}`;
+  $("sideStatusDot").className = `mini-led ${statusClass(status)}`;
+  $("sideStatusText").textContent = status.toUpperCase();
   $("statusText").textContent = status.toUpperCase();
   $("statusReason").textContent = data.summary.reason || t("statusUnknown");
   $("restartCount").textContent = data.summary.recentRestarts ?? 0;
@@ -445,6 +607,10 @@ function render(data) {
   $("modelOk").textContent = data.summary.modelOk ?? 0;
   $("modelFail").textContent = data.summary.modelFailures ?? 0;
   $("updatedAt").textContent = fmtDate(data.generatedAt);
+  $("sideUpdatedAt").textContent = fmtDate(data.generatedAt);
+  const modelTotal = (data.summary.modelOk || 0) + (data.summary.modelFailures || 0);
+  $("modelRate").textContent = modelTotal ? `${Math.round(((data.summary.modelOk || 0) / modelTotal) * 100)}%` : "--";
+  $("modelFailHint").textContent = data.summary.modelFailures ? "check provider" : "provider";
   updateActionUi(data);
   renderLayers(data);
   renderTrendSummaries(data);
@@ -508,6 +674,8 @@ $("unlockBtn").addEventListener("click", () => {
   }
 });
 
+$("strategyUnlockBtn").addEventListener("click", () => $("unlockBtn").click());
+
 $("exportBtn").addEventListener("click", async () => {
   const data = lastStatus || await fetchStatus();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -520,6 +688,7 @@ $("exportBtn").addEventListener("click", async () => {
 });
 
 $("diagBtn").addEventListener("click", async () => {
+  if (!canRunActions()) return;
   try {
     toast(t("runningDiag"));
     await postJson("/api/actions/run-diagnostics");
@@ -530,7 +699,10 @@ $("diagBtn").addEventListener("click", async () => {
   }
 });
 
+$("heroDiagBtn").addEventListener("click", () => $("diagBtn").click());
+
 $("restartBtn").addEventListener("click", async () => {
+  if (!canRunActions()) return;
   if (!confirm(t("restartConfirm"))) return;
   try {
     await postJson("/api/actions/restart-gateway");
@@ -541,8 +713,11 @@ $("restartBtn").addEventListener("click", async () => {
   }
 });
 
+$("heroRestartBtn").addEventListener("click", () => $("restartBtn").click());
+
 document.querySelectorAll("[data-preset]").forEach((button) => {
   button.addEventListener("click", async () => {
+    if (!canRunActions()) return;
     try {
       await postJson("/api/config/preset", { preset: button.dataset.preset });
       await refresh();

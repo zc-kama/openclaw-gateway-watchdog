@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.3
+
+- Rebuild the dashboard visual system on local Fluent UI Web Components instead of plain native controls.
+- Replace the old dropdowns and buttons with componentized controls, dark glass panels, animated ambient background, and refined hover states.
+- Rebalance every dashboard page so Overview, Trends, Strategy, Logs, and Config each have complete work areas rather than sparse split-up cards.
+- Add richer summaries for trend digest, latest signals, strategy matrix, action center, and runtime map.
+- Serve bundled local component assets under `/vendor/` so the recovery UI does not depend on CDN availability.
+
 ## 1.4.2
 
 - Rework the dashboard sidebar into real view switching for Overview, Trends, Strategy, Logs, and Config instead of one long page.

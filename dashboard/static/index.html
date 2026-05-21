@@ -1,12 +1,16 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN" data-theme="obsidian">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OpenClaw Resilience Guard</title>
+  <script type="module" src="/vendor/fluent-register.js"></script>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
@@ -16,154 +20,235 @@
           <span>OpenClaw</span>
         </div>
       </div>
+
       <nav class="nav" aria-label="Dashboard">
-        <button class="nav-item active" data-route="overview" data-i18n="navOverview">总览</button>
-        <button class="nav-item" data-route="trends" data-i18n="navTrends">趋势</button>
-        <button class="nav-item" data-route="strategy" data-i18n="navStrategy">策略</button>
-        <button class="nav-item" data-route="logs" data-i18n="navLogs">日志</button>
-        <button class="nav-item" data-route="settings" data-i18n="navSettings">配置</button>
+        <fluent-button class="nav-item active" appearance="stealth" data-route="overview">
+          <span class="nav-icon">⌁</span><span data-i18n="navOverview">总览</span>
+        </fluent-button>
+        <fluent-button class="nav-item" appearance="stealth" data-route="trends">
+          <span class="nav-icon">⌇</span><span data-i18n="navTrends">趋势</span>
+        </fluent-button>
+        <fluent-button class="nav-item" appearance="stealth" data-route="strategy">
+          <span class="nav-icon">◇</span><span data-i18n="navStrategy">策略</span>
+        </fluent-button>
+        <fluent-button class="nav-item" appearance="stealth" data-route="logs">
+          <span class="nav-icon">≣</span><span data-i18n="navLogs">日志</span>
+        </fluent-button>
+        <fluent-button class="nav-item" appearance="stealth" data-route="settings">
+          <span class="nav-icon">⚙</span><span data-i18n="navSettings">配置</span>
+        </fluent-button>
       </nav>
+
+      <div class="side-status">
+        <span id="sideStatusDot" class="mini-led unknown"></span>
+        <div>
+          <strong id="sideStatusText">SYNC</strong>
+          <span id="sideUpdatedAt">--</span>
+        </div>
+      </div>
     </aside>
 
     <main class="workspace">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">OPENCLAW WATCHDOG</p>
+        <div class="title-block">
+          <span class="eyebrow">OPENCLAW WATCHDOG</span>
           <h1 id="pageTitle">恢复控制台</h1>
+          <p id="pageSubtitle" data-i18n="subtitleOverview">把 Gateway、通道、日志和模型探针合成一个恢复判断。</p>
         </div>
         <div class="top-actions">
-          <select id="langSelect" title="Language">
-            <option value="zh">中文</option>
-            <option value="en">English</option>
-          </select>
-          <select id="themeSelect" title="Theme">
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="ocean">Ocean</option>
-            <option value="forest">Forest</option>
-          </select>
-          <button id="refreshBtn" class="icon-btn" title="Refresh">↻</button>
-          <button id="exportBtn" class="primary" data-i18n="export">导出诊断</button>
+          <fluent-select id="langSelect" title="Language" appearance="outline">
+            <fluent-option value="zh">中文</fluent-option>
+            <fluent-option value="en">English</fluent-option>
+          </fluent-select>
+          <fluent-select id="themeSelect" title="Theme" appearance="outline">
+            <fluent-option value="obsidian">Obsidian</fluent-option>
+            <fluent-option value="daylight">Daylight</fluent-option>
+            <fluent-option value="aurora">Aurora</fluent-option>
+            <fluent-option value="graphite">Graphite</fluent-option>
+          </fluent-select>
+          <fluent-button id="refreshBtn" class="icon-btn" appearance="outline" title="Refresh">↻</fluent-button>
+          <fluent-button id="exportBtn" appearance="accent" data-i18n="export">导出诊断</fluent-button>
         </div>
       </header>
 
       <section class="view active" data-view="overview">
-        <div class="status-strip">
-          <div class="status-summary">
-            <span id="mainStatus" class="status-dot unknown"></span>
-            <div>
+        <div class="overview-grid">
+          <article class="hero-panel">
+            <div class="hero-signal">
+              <span id="mainStatus" class="status-orb unknown"></span>
+              <span class="scan-ring"></span>
+            </div>
+            <div class="hero-copy">
               <span class="label" data-i18n="currentDecision">当前判断</span>
-              <strong id="statusText">读取中</strong>
+              <strong id="statusText">SYNC</strong>
               <p id="statusReason">正在汇总 watchdog 状态。</p>
             </div>
-          </div>
-          <div class="metric-card"><strong id="restartCount">0</strong><span data-i18n="recentRestarts">近期重启</span></div>
-          <div class="metric-card"><strong id="categoryCount">0</strong><span data-i18n="signalTypes">异常类别</span></div>
-          <div class="metric-card"><strong id="modelOk">0</strong><span data-i18n="modelOk">模型成功</span></div>
-          <div class="metric-card"><strong id="modelFail">0</strong><span data-i18n="modelFail">模型失败</span></div>
+            <div class="hero-actions">
+              <fluent-button id="heroDiagBtn" appearance="outline" data-i18n="runDiag">立即诊断</fluent-button>
+              <fluent-button id="heroRestartBtn" appearance="accent" data-i18n="restartGateway">重启 Gateway</fluent-button>
+            </div>
+          </article>
+
+          <article class="metric-card metric-a">
+            <span data-i18n="recentRestarts">近期重启</span>
+            <strong id="restartCount">0</strong>
+            <small id="restartHint">24h</small>
+          </article>
+          <article class="metric-card metric-b">
+            <span data-i18n="signalTypes">异常类别</span>
+            <strong id="categoryCount">0</strong>
+            <small>OpenClaw logs</small>
+          </article>
+          <article class="metric-card metric-c">
+            <span data-i18n="modelOk">模型成功</span>
+            <strong id="modelOk">0</strong>
+            <small id="modelRate">--</small>
+          </article>
+          <article class="metric-card metric-d">
+            <span data-i18n="modelFail">模型失败</span>
+            <strong id="modelFail">0</strong>
+            <small id="modelFailHint">provider</small>
+          </article>
         </div>
 
         <div class="dashboard-grid">
-          <article class="panel span-7">
+          <article class="panel span-7 tall-panel">
             <div class="panel-head">
-              <h2 data-i18n="layers">链路分层</h2>
-              <span id="updatedAt" class="subtle"></span>
+              <div><h2 data-i18n="layers">链路分层</h2><p data-i18n="layersHint">按恢复路径从 Gateway 到模型 provider 排列。</p></div>
+              <fluent-badge id="updatedAt" appearance="lightweight">--</fluent-badge>
             </div>
             <div id="layers" class="layer-table"></div>
           </article>
 
-          <article class="panel span-5">
+          <article class="panel span-5 tall-panel">
             <div class="panel-head">
-              <h2 data-i18n="signalCategories">异常分类</h2>
-              <span class="subtle">OpenClaw logs</span>
+              <div><h2 data-i18n="signalCategories">异常分类</h2><p data-i18n="signalHint">用于判断是代理、provider 还是通道层问题。</p></div>
             </div>
             <canvas id="categoryChart" class="chart chart-bars"></canvas>
+            <div id="categoryTopList" class="mini-list"></div>
+          </article>
+
+          <article class="panel span-4">
+            <div class="panel-head compact"><h2 data-i18n="modelSummary">模型探针</h2></div>
+            <div id="overviewModelSummary" class="summary-list"></div>
+          </article>
+          <article class="panel span-4">
+            <div class="panel-head compact"><h2 data-i18n="restartSummary">重启统计</h2></div>
+            <div id="overviewRestartSummary" class="summary-list"></div>
+          </article>
+          <article class="panel span-4">
+            <div class="panel-head compact"><h2 data-i18n="actionCenter">处置入口</h2></div>
+            <div class="action-stack">
+              <fluent-button id="unlockBtn" appearance="outline" data-i18n="unlock">解锁操作</fluent-button>
+              <span id="actionState" class="status-chip">只读</span>
+            </div>
           </article>
         </div>
       </section>
 
       <section class="view" data-view="trends">
         <div class="dashboard-grid">
-          <article class="panel span-12">
+          <article class="panel span-8 tall-panel">
             <div class="panel-head">
-              <h2 data-i18n="eventTrend">事件趋势</h2>
-              <span class="subtle" data-i18n="eventTrendHint">诊断与模型探针</span>
+              <div><h2 data-i18n="eventTrend">事件趋势</h2><p data-i18n="eventTrendHint">诊断、日志告警和模型探针的同屏时间线。</p></div>
+              <fluent-badge appearance="accent">live</fluent-badge>
             </div>
             <canvas id="timelineChart" class="chart chart-timeline"></canvas>
           </article>
-          <article class="panel span-6">
-            <div class="panel-head"><h2 data-i18n="modelSummary">模型探针</h2></div>
+          <article class="panel span-4 tall-panel">
+            <div class="panel-head"><div><h2 data-i18n="trendDigest">趋势摘要</h2><p data-i18n="trendDigestHint">把散点变成可读结论。</p></div></div>
+            <div id="trendDigest" class="digest"></div>
+          </article>
+          <article class="panel span-4">
+            <div class="panel-head compact"><h2 data-i18n="modelSummary">模型探针</h2></div>
             <div id="modelSummary" class="summary-list"></div>
           </article>
-          <article class="panel span-6">
-            <div class="panel-head"><h2 data-i18n="restartSummary">重启统计</h2></div>
+          <article class="panel span-4">
+            <div class="panel-head compact"><h2 data-i18n="restartSummary">重启统计</h2></div>
             <div id="restartSummary" class="summary-list"></div>
+          </article>
+          <article class="panel span-4">
+            <div class="panel-head compact"><h2 data-i18n="latestSignals">最新信号</h2></div>
+            <div id="latestSignals" class="mini-list"></div>
           </article>
         </div>
       </section>
 
       <section class="view" data-view="strategy">
         <div class="dashboard-grid">
-          <article class="panel span-8">
+          <article class="panel span-8 tall-panel">
             <div class="panel-head">
-              <h2 data-i18n="quickStrategy">快速策略</h2>
-              <span id="actionState" class="pill">只读</span>
+              <div><h2 data-i18n="quickStrategy">快速策略</h2><p data-i18n="strategyHint">选择故障处理姿态，所有写入动作都需要先解锁。</p></div>
+              <span id="strategyActionState" class="status-chip">只读</span>
             </div>
-            <button id="unlockBtn" class="wide-btn" data-i18n="unlock">解锁操作</button>
             <div class="preset-grid">
-              <button data-preset="observe" data-tip-key="tipObserve">
+              <fluent-button class="preset-card" appearance="outline" data-preset="observe" data-tip-key="tipObserve">
                 <strong data-i18n="presetObserve">观察模式</strong>
                 <span data-i18n="tipObserve">只记录证据，不主动改变策略，适合先观察问题。</span>
-              </button>
-              <button data-preset="overnight" data-tip-key="tipOvernight">
+              </fluent-button>
+              <fluent-button class="preset-card" appearance="outline" data-preset="overnight" data-tip-key="tipOvernight">
                 <strong data-i18n="presetOvernight">夜间诊断</strong>
                 <span data-i18n="tipOvernight">开启轻量模型探针并保持 log-only，适合排查固定时段超时。</span>
-              </button>
-              <button data-preset="channel-recovery" data-tip-key="tipChannel">
+              </fluent-button>
+              <fluent-button class="preset-card" appearance="outline" data-preset="channel-recovery" data-tip-key="tipChannel">
                 <strong data-i18n="presetChannel">通道恢复</strong>
                 <span data-i18n="tipChannel">保持通道恢复敏感度，适合通道/session 经常断开的场景。</span>
-              </button>
-              <button data-preset="conservative" data-tip-key="tipConservative">
+              </fluent-button>
+              <fluent-button class="preset-card" appearance="outline" data-preset="conservative" data-tip-key="tipConservative">
                 <strong data-i18n="presetConservative">保守熔断</strong>
                 <span data-i18n="tipConservative">提高阈值并降低重启频率，适合网络不稳定时防止重启风暴。</span>
-              </button>
+              </fluent-button>
             </div>
           </article>
-          <article class="panel span-4">
-            <div class="panel-head"><h2 data-i18n="manualActions">手动操作</h2></div>
+          <article class="panel span-4 tall-panel">
+            <div class="panel-head"><div><h2 data-i18n="manualActions">手动操作</h2><p data-i18n="manualHint">高风险动作集中放在这里。</p></div></div>
             <div class="action-stack">
-              <button id="diagBtn" data-i18n="runDiag">立即诊断</button>
-              <button id="restartBtn" class="danger" data-i18n="restartGateway">重启 Gateway</button>
+              <fluent-button id="strategyUnlockBtn" appearance="outline" data-i18n="unlock">解锁操作</fluent-button>
+              <fluent-button id="diagBtn" appearance="outline" data-i18n="runDiag">立即诊断</fluent-button>
+              <fluent-button id="restartBtn" appearance="accent" data-i18n="restartGateway">重启 Gateway</fluent-button>
             </div>
+            <div id="strategyConfigSummary" class="summary-list strategy-summary"></div>
+          </article>
+          <article class="panel span-12">
+            <div class="panel-head compact"><h2 data-i18n="strategyMatrix">策略矩阵</h2></div>
+            <div id="strategyMatrix" class="matrix-grid"></div>
           </article>
         </div>
       </section>
 
       <section class="view" data-view="logs">
-        <article class="panel">
-          <div class="panel-head">
-            <h2 data-i18n="recentLogs">最近日志</h2>
-            <label class="toggle"><input id="followLog" type="checkbox" checked><span data-i18n="followLatest">保持最新</span></label>
-          </div>
-          <pre id="logTail" class="log"></pre>
-        </article>
+        <div class="dashboard-grid">
+          <article class="panel span-8 log-panel">
+            <div class="panel-head">
+              <div><h2 data-i18n="recentLogs">最近日志</h2><p data-i18n="logHint">默认跟随最新行，适合观察夜间超时。</p></div>
+              <label class="toggle"><input id="followLog" type="checkbox" checked><span data-i18n="followLatest">保持最新</span></label>
+            </div>
+            <pre id="logTail" class="log"></pre>
+          </article>
+          <article class="panel span-4 log-panel">
+            <div class="panel-head"><div><h2 data-i18n="latestSignals">最新信号</h2><p data-i18n="signalHint">异常关键词的聚合视图。</p></div></div>
+            <div id="logSignalList" class="mini-list large"></div>
+          </article>
+        </div>
       </section>
 
       <section class="view" data-view="settings">
         <div class="dashboard-grid">
-          <article class="panel span-6">
+          <article class="panel span-6 tall-panel">
             <div class="panel-head">
-              <h2 data-i18n="configSummary">配置摘要</h2>
-              <span class="subtle" data-i18n="sensitiveMasked">敏感项已遮盖</span>
+              <div><h2 data-i18n="configSummary">配置摘要</h2><p data-i18n="sensitiveMasked">敏感项已遮盖</p></div>
             </div>
             <dl id="configList" class="config-list"></dl>
           </article>
-          <article class="panel span-6">
+          <article class="panel span-6 tall-panel">
             <div class="panel-head">
-              <h2 data-i18n="stateFiles">状态文件</h2>
-              <span class="subtle">mtime</span>
+              <div><h2 data-i18n="stateFiles">状态文件</h2><p>mtime / size</p></div>
             </div>
             <div id="fileList" class="file-list"></div>
+          </article>
+          <article class="panel span-12">
+            <div class="panel-head compact"><h2 data-i18n="runtimeMap">运行地图</h2></div>
+            <div id="runtimeMap" class="runtime-map"></div>
           </article>
         </div>
       </section>
