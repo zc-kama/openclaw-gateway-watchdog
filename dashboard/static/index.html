@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OpenClaw Resilience Guard</title>
-  <script type="module" src="/vendor/fluent-register.js"></script>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -14,7 +13,7 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-mark">RG</span>
+        <span class="brand-mark" aria-hidden="true"></span>
         <div>
           <strong>Resilience Guard</strong>
           <span>OpenClaw</span>
@@ -22,21 +21,21 @@
       </div>
 
       <nav class="nav" aria-label="Dashboard">
-        <fluent-button class="nav-item active" appearance="stealth" data-route="overview">
+        <button type="button" class="nav-item active" data-route="overview">
           <span class="nav-icon">⌁</span><span data-i18n="navOverview">总览</span>
-        </fluent-button>
-        <fluent-button class="nav-item" appearance="stealth" data-route="trends">
+        </button>
+        <button type="button" class="nav-item" data-route="trends">
           <span class="nav-icon">⌇</span><span data-i18n="navTrends">趋势</span>
-        </fluent-button>
-        <fluent-button class="nav-item" appearance="stealth" data-route="strategy">
+        </button>
+        <button type="button" class="nav-item" data-route="strategy">
           <span class="nav-icon">◇</span><span data-i18n="navStrategy">策略</span>
-        </fluent-button>
-        <fluent-button class="nav-item" appearance="stealth" data-route="logs">
+        </button>
+        <button type="button" class="nav-item" data-route="logs">
           <span class="nav-icon">≣</span><span data-i18n="navLogs">日志</span>
-        </fluent-button>
-        <fluent-button class="nav-item" appearance="stealth" data-route="settings">
+        </button>
+        <button type="button" class="nav-item" data-route="settings">
           <span class="nav-icon">⚙</span><span data-i18n="navSettings">配置</span>
-        </fluent-button>
+        </button>
       </nav>
 
       <div class="side-status">
@@ -56,18 +55,18 @@
           <p id="pageSubtitle" data-i18n="subtitleOverview">把 Gateway、通道、日志和模型探针合成一个恢复判断。</p>
         </div>
         <div class="top-actions">
-          <fluent-select id="langSelect" title="Language" appearance="outline">
-            <fluent-option value="zh">中文</fluent-option>
-            <fluent-option value="en">English</fluent-option>
-          </fluent-select>
-          <fluent-select id="themeSelect" title="Theme" appearance="outline">
-            <fluent-option value="obsidian">Obsidian</fluent-option>
-            <fluent-option value="daylight">Daylight</fluent-option>
-            <fluent-option value="aurora">Aurora</fluent-option>
-            <fluent-option value="graphite">Graphite</fluent-option>
-          </fluent-select>
-          <fluent-button id="refreshBtn" class="icon-btn" appearance="outline" title="Refresh">↻</fluent-button>
-          <fluent-button id="exportBtn" appearance="accent" data-i18n="export">导出诊断</fluent-button>
+          <select id="langSelect" class="ui-select" title="Language">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+          </select>
+          <select id="themeSelect" class="ui-select" title="Theme">
+            <option value="obsidian">Obsidian</option>
+            <option value="daylight">Daylight</option>
+            <option value="aurora">Aurora</option>
+            <option value="graphite">Graphite</option>
+          </select>
+          <button type="button" id="refreshBtn" class="ui-button icon-btn" title="Refresh">↻</button>
+          <button type="button" id="exportBtn" class="ui-button primary" data-i18n="export">导出诊断</button>
         </div>
       </header>
 
@@ -84,8 +83,8 @@
               <p id="statusReason">正在汇总 watchdog 状态。</p>
             </div>
             <div class="hero-actions">
-              <fluent-button id="heroDiagBtn" appearance="outline" data-i18n="runDiag">立即诊断</fluent-button>
-              <fluent-button id="heroRestartBtn" appearance="accent" data-i18n="restartGateway">重启 Gateway</fluent-button>
+              <button type="button" id="heroDiagBtn" class="ui-button" data-i18n="runDiag">立即诊断</button>
+              <button type="button" id="heroRestartBtn" class="ui-button primary" data-i18n="restartGateway">重启 Gateway</button>
             </div>
           </article>
 
@@ -115,7 +114,7 @@
           <article class="panel span-7 tall-panel">
             <div class="panel-head">
               <div><h2 data-i18n="layers">链路分层</h2><p data-i18n="layersHint">按恢复路径从 Gateway 到模型 provider 排列。</p></div>
-              <fluent-badge id="updatedAt" appearance="lightweight">--</fluent-badge>
+              <span id="updatedAt" class="badge">--</span>
             </div>
             <div id="layers" class="layer-table"></div>
           </article>
@@ -139,7 +138,7 @@
           <article class="panel span-4">
             <div class="panel-head compact"><h2 data-i18n="actionCenter">处置入口</h2></div>
             <div class="action-stack">
-              <fluent-button id="unlockBtn" appearance="outline" data-i18n="unlock">解锁操作</fluent-button>
+              <button type="button" id="unlockBtn" class="ui-button" data-i18n="unlock">解锁操作</button>
               <span id="actionState" class="status-chip">只读</span>
             </div>
           </article>
@@ -151,7 +150,7 @@
           <article class="panel span-8 tall-panel">
             <div class="panel-head">
               <div><h2 data-i18n="eventTrend">事件趋势</h2><p data-i18n="eventTrendHint">诊断、日志告警和模型探针的同屏时间线。</p></div>
-              <fluent-badge appearance="accent">live</fluent-badge>
+              <span class="badge accent">live</span>
             </div>
             <canvas id="timelineChart" class="chart chart-timeline"></canvas>
           </article>
@@ -182,30 +181,30 @@
               <span id="strategyActionState" class="status-chip">只读</span>
             </div>
             <div class="preset-grid">
-              <fluent-button class="preset-card" appearance="outline" data-preset="observe" data-tip-key="tipObserve">
+              <button type="button" class="preset-card" data-preset="observe" data-tip-key="tipObserve">
                 <strong data-i18n="presetObserve">观察模式</strong>
                 <span data-i18n="tipObserve">只记录证据，不主动改变策略，适合先观察问题。</span>
-              </fluent-button>
-              <fluent-button class="preset-card" appearance="outline" data-preset="overnight" data-tip-key="tipOvernight">
+              </button>
+              <button type="button" class="preset-card" data-preset="overnight" data-tip-key="tipOvernight">
                 <strong data-i18n="presetOvernight">夜间诊断</strong>
                 <span data-i18n="tipOvernight">开启轻量模型探针并保持 log-only，适合排查固定时段超时。</span>
-              </fluent-button>
-              <fluent-button class="preset-card" appearance="outline" data-preset="channel-recovery" data-tip-key="tipChannel">
+              </button>
+              <button type="button" class="preset-card" data-preset="channel-recovery" data-tip-key="tipChannel">
                 <strong data-i18n="presetChannel">通道恢复</strong>
                 <span data-i18n="tipChannel">保持通道恢复敏感度，适合通道/session 经常断开的场景。</span>
-              </fluent-button>
-              <fluent-button class="preset-card" appearance="outline" data-preset="conservative" data-tip-key="tipConservative">
+              </button>
+              <button type="button" class="preset-card" data-preset="conservative" data-tip-key="tipConservative">
                 <strong data-i18n="presetConservative">保守熔断</strong>
                 <span data-i18n="tipConservative">提高阈值并降低重启频率，适合网络不稳定时防止重启风暴。</span>
-              </fluent-button>
+              </button>
             </div>
           </article>
           <article class="panel span-4 tall-panel">
             <div class="panel-head"><div><h2 data-i18n="manualActions">手动操作</h2><p data-i18n="manualHint">高风险动作集中放在这里。</p></div></div>
             <div class="action-stack">
-              <fluent-button id="strategyUnlockBtn" appearance="outline" data-i18n="unlock">解锁操作</fluent-button>
-              <fluent-button id="diagBtn" appearance="outline" data-i18n="runDiag">立即诊断</fluent-button>
-              <fluent-button id="restartBtn" appearance="accent" data-i18n="restartGateway">重启 Gateway</fluent-button>
+              <button type="button" id="strategyUnlockBtn" class="ui-button" data-i18n="unlock">解锁操作</button>
+              <button type="button" id="diagBtn" class="ui-button" data-i18n="runDiag">立即诊断</button>
+              <button type="button" id="restartBtn" class="ui-button primary" data-i18n="restartGateway">重启 Gateway</button>
             </div>
             <div id="strategyConfigSummary" class="summary-list strategy-summary"></div>
           </article>

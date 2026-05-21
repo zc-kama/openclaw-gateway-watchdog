@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.4
+
+- Replace fragile Web Component controls with semantic native buttons and selects styled by the local dashboard design system.
+- Fix the top action bar, sidebar navigation, refresh/export controls, and strategy buttons so they always render as clickable UI even if component scripts are blocked or stale.
+- Center the brand mark text and restore pointer cursor, hover, focus, and active states across navigation and action controls.
+- Fix config summary row layout so long environment keys no longer overlap values.
+
 ## 1.4.3
 
 - Rebuild the dashboard visual system on local Fluent UI Web Components instead of plain native controls.

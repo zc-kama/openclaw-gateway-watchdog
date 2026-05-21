@@ -107,7 +107,7 @@ http://127.0.0.1:18790/
 - Gateway、通道、外部网络、OpenClaw 日志、模型 provider 的分层状态。
 - provider timeout、代理/网络、限流、鉴权、通道 session、Gateway degraded、配置热加载、任务运行时异常的分类图表。
 - 侧边栏分页：总览、趋势、策略、日志、配置分开呈现，避免把监控、操作和明细堆在一个长页面里。
-- 本地打包的 Fluent Web Components 控件：下拉框、按钮、状态标签不依赖 CDN，断网时仍可用。
+- 本地设计系统控件：下拉框、按钮、状态标签使用原生语义控件加统一样式，不依赖 CDN 或组件脚本升级。
 - 重新分配每页信息密度：趋势页有摘要和最新信号，策略页有策略矩阵和手动操作，配置页有运行地图。
 - 事件趋势图，把 API 失败、日志 WARN、模型探针成功、健康诊断分成不同泳道，并保留清晰的时间刻度。
 - 中英文语言切换，以及 Light、Dark、Ocean、Forest 四套主题。
@@ -352,8 +352,8 @@ MIT-0。这个许可证符合 ClawHub skill 发布要求，也方便别人直接
 clawhub publish . \
   --slug gateway-resilience-guard \
   --name "OpenClaw Gateway Resilience Guard" \
-  --version 1.4.3 \
-  --changelog "Rebuild dashboard on local Fluent Web Components with denser pages, refined controls, motion, and bundled vendor assets"
+  --version 1.4.4 \
+  --changelog "Make dashboard controls robust with native semantic buttons/selects, fixed hover states, centered brand mark, and non-overlapping config rows"
 ```
 
 发布前需要先执行 `clawhub login` 完成 CLI 登录。

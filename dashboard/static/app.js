@@ -547,7 +547,12 @@ function renderConfig(config) {
   ];
   const rows = [];
   for (const key of keys) if (Object.prototype.hasOwnProperty.call(config, key)) rows.push([key, config[key]]);
-  $("configList").innerHTML = rows.map(([key, value]) => `<dt>${key}</dt><dd>${String(value)}</dd>`).join("");
+  $("configList").innerHTML = rows.map(([key, value]) => `
+    <div class="config-row">
+      <dt title="${key}">${key}</dt>
+      <dd>${String(value)}</dd>
+    </div>
+  `).join("");
 }
 
 function renderFiles(files) {
